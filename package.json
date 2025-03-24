@@ -1,0 +1,15 @@
+{
+    "name": "my-cloud-native-app",
+    "version": "1.0.0",
+    "description": "A cloud-native web application for user management.",
+    "main": "src/script.js",
+    "scripts": {
+      "start": "node src/script.js",
+      "test": "echo \"No tests specified\" && exit 0"
+    },
+    "dependencies": {
+      "express": "^4.17.1"
+    },
+    "author": "Your Name",
+    "license": "MIT"
+  }
