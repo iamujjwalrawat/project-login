@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - My Application</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #FF9800, #FFFFFF, #2196F3, #4CAF50, #03A9F4);
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">
+        <img src="https://via.placeholder.com/150" alt="Logo" class="w-32 h-32">
+    </div>
+    <div class="container">
+        <div class="login-container bg-white p-8 rounded-lg shadow-lg w-96">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">My Application</h2>
+            <form id="loginForm">
+                <div class="input-group mb-4">
+                    <label for="username" class="block text-gray-700">Username</label>
+                    <input type="text" id="username" name="username" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="input-group mb-4">
+                    <label for="password" class="block text-gray-700">Password</label>
+                    <input type="password" id="password" name="password" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-200">Log In</button>
+                <div id="message" class="message text-red-500 mt-2"></div>
+            </form>
+            <div class="footer text-center mt-4 text-gray-600">
+                <p>Need help? <a href="#" class="text-blue-500 hover:underline">Click here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting the default way
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Simulate an AJAX request (GET and PUT)
+            const url = 'https://example.com/api/login'; // Replace with your API endpoint
+
+            // Example of a GET request (to fetch user data)
+            fetch(url + '?username=' + username)
+                .then(response => response.json())
+                .then(data => {
+                    // Simulate a successful login for specific credentials
+                    if (data.username === username && data.password === password) {
+                        document.getElementById('message').textContent = 'Login successful!';
+                        document.getElementById('message').style.color = 'green';
+                    } else {
+                        document.getElementById('message').textContent = 'Login failed. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('message').textContent = 'An error occurred. Please try again.';
+                });
+
+            // Example of a PUT request (to update user data)
+            const userData = {
+                username: username,
+                password: password
+            };
+
+            fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
