@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Application</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #FF6F20, #FF9A00, #2196F3, #4CAF50, #A5D6A7, #FFFFFF); /* Updated vibrant colors with white transition */
+            overflow: hidden; /* Prevent scrollbars */
+            position: relative;
+        }
+
+        .web-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allow clicks to pass through */
+        }
+
+        .web {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            opacity: 0.7;
+            transition: transform 0.2s ease, opacity 0.5s ease;
+            transform: scale(0); /* Start scaled down */
+        }
+
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .eye-icon {
+            cursor: pointer;
+            position: absolute;
+            right: 10px; /* Adjusted for better alignment */
+            top: 50%; /* Center vertically */
+            transform: translateY(-50%); /* Center the icon */
+        }
+    </style>
+</head>
+<body>
+    <div class="web-container" id="webContainer"></div>
+    <div class="logo">
+        <img src="https://via.placeholder.com/150" alt="Logo" class="w-32 h-32">
+    </div>
+    <div class="container">
+        <div class="login-container bg-white p-8 rounded-lg shadow-lg w-96 relative">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Intranet Application</h2>
+            <form id="loginForm">
+                <div class="input-group mb-4">
+                    <label for="email" class="block text-gray-700">Email</label>
+                    <input type="email" id="email" name="email" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="you@example.com">
+                </div>
+                <div class="input-group mb-4 relative">
+                    <label for="password" class="block text-gray-700">Password</label>
+                    <input type="password" id="password" name="password" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your password">
+                    <span class="eye-icon" id="togglePassword">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12c0 4.418 4.5 9 9 9s9-4.582 9-9-4.5-9-9-9-9 4.582-9 9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3z" />
+                        </svg>
+                    </span>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-200">Log In</button>
+                <div id="message" class="message text-red-500 mt-2"></div>
+            </form>
+            <div class="footer text-center mt-4 text-gray-600">
+                <p>Need help? <a href="#" class="text-blue-500 hover:underline">Click here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Spider web effect
+        const webContainer = document.getElementById('webContainer');
+
+        function createWeb(x, y) {
+            const web = document.createElement('div');
+            web.className = 'web';
+            web.style.left = `${x}px`;
+            web.style.top = `${y}px`;
+            web.style.transform = 'scale(1)'; // Scale up to full size
+            webContainer.appendChild(web);
+
+            // Remove the web after a short duration
+            setTimeout(() => {
+                web.style.opacity = '0'; // Fade out
+                setTimeout(() => {
+                    webContainer.removeChild(web);
+                }, 500); // Wait for fade out to complete
+            }, 1000); // Adjust duration as needed
+        }
+
+        // Mouse move event to create web effect
+        document.addEventListener('mousemove', (e) => {
+            const loginContainer = document.querySelector('.login-container');
+            const rect = loginContainer.getBoundingClientRect();
+
+            // Check if the mouse is outside the login container
+            if (
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                createWeb(e.pageX - 50, e.pageY - 50); // Center the web
+            }
+        });
+
+        // Show/Hide password functionality
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            togglePassword.innerHTML = type === 'password' 
+                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12c0 4.418 4.5 9 9 9s9-4.582 9-9-4.5-9-9-9-9 4.582-9 9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3z" />
+                </svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12c0 4.418 4.5 9 9 9s9-4.582 9-9-4.5-9-9-9-9 4.582-9 9z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+                </svg>`;
+        });
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting the default way
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Validate email format
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                document.getElementById('message').textContent = 'Please enter a valid email address.';
+                return;
+            }
+
+            // Simulate an AJAX request (GET and PUT)
+            const url = 'https://example.com/api/login'; // Replace with your API endpoint
+
+            // Example of a GET request (to fetch user data)
+            fetch(url + '?email=' + encodeURIComponent(email))
+                .then(response => response.json())
+                .then(data => {
+                    // Simulate a successful login for specific credentials
+                    if (data.email === email && data.password === password) {
+                        document.getElementById('message').textContent = 'Login successful!';
+                        document.getElementById('message').style.color = 'green';
+                    } else {
+                        document.getElementById('message').textContent = 'Login failed. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('message').textContent = 'An error occurred. Please try again.';
+                });
+
+            // Example of a PUT request (to update user data)
+            const userData = {
+                email: email,
+                password: password
+            };
+
+            fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
