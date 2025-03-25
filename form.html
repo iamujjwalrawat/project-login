@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Form</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f0f0f0; /* Light gray background */
+            font-family: 'Arial', sans-serif;
+            color: #333; /* Dark text color */
+        }
+        .container {
+            background: #ffffff; /* White background for the form */
+            border-radius: 20px; /* Rounded corners */
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            padding: 40px; /* Increased padding for a spacious feel */
+            width: 90%;
+            max-width: 800px; /* Wider container */
+            box-sizing: border-box; /* Include padding in width */
+            overflow-y: auto; /* Enable scrolling */
+            max-height: 90vh; /* Limit height for scrolling */
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 30px; /* Increased margin for spacing */
+            color: #333;
+            font-size: 24px; /* Larger font size */
+            font-weight: 600; /* Bold font weight */
+        }
+        .input-container {
+            position: relative;
+            margin: 15px 0; /* Increased margin for spacing */
+            border: 1px solid #ccc;
+            border-radius: 10px; /* Rounded corners */
+            display: flex;
+            align-items: center;
+            padding: 12px; /* Padding for the container */
+            transition: border-color 0.3s; /* Smooth transition for border color */
+        }
+        .input-container input, .input-container select {
+            border: none;
+            outline: none;
+            flex: 1; /* Allow input to take available space */
+            padding: 12px; /* Padding for input */
+            font-size: 16px;
+            box-sizing: border-box; /* Ensure padding is included in width */
+            background: #f9f9f9; /* Light gray background for inputs */
+            border-radius: 8px; /* Rounded corners for inputs */
+        }
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            border-color: #007bff; /* Blue border on focus */
+            background: #ffffff; /* White background on focus */
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff; /* Blue background */
+            color: white;
+            border: none;
+            border-radius: 10px; /* Rounded corners */
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s; /* Smooth transition for background color */
+            margin-top: 20px; /* Space above button */
+        }
+        button:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+        .captcha-container {
+            display: flex;
+            align-items: center;
+            margin: 15px 0; /* Increased margin for spacing */
+            border: 1px solid #ccc; /* Border for the CAPTCHA container */
+            border-radius: 8px; /* Rounded corners for the container */
+            padding: 10px; /* Padding for the container */
+            background: #f9f9f9; /* Light gray background for the container */
+        }
+        .captcha {
+            font-size: 18px; /* Font size for CAPTCHA */
+            font-weight: bold;
+            color: #333; /* Dark text color for CAPTCHA */
+            flex: 1; /* Allow CAPTCHA to take available space */
+            text-align: center; /* Center text in CAPTCHA box */
+        }
+        .refresh-button {
+            background-color: orange; /* Orange color for refresh button */
+            color: white;
+            border: none;
+            border-radius: 8px; /* Rounded corners */
+            padding: 10px; /* Same padding as CAPTCHA */
+            cursor: pointer;
+            transition: background-color 0.3s; /* Smooth transition for background color */
+            width: 100px; /* Fixed width for refresh button */
+            font-size: 16px; /* Consistent font size */
+            margin-left: 10px; /* Space between CAPTCHA and button */
+        }
+        .refresh-button:hover {
+            background-color: darkorange; /* Darker orange on hover */
+        }
+        .gender-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0; /* Increased margin for spacing */
+        }
+        .gender-container label {
+            margin-right: 10px;
+            font-size: 16px; /* Consistent font size */
+        }
+        .help-link {
+            display: block;
+            text-align: right; /* Align to the right */
+            margin-top: 10px;
+            color: #007bff; /* Blue color for help link */
+            text-decoration: none;
+            font-size: 12px; /* Smaller text size */
+        }
+        .message {
+            text-align: center;
+            margin-top: 10px;
+            color: red; /* Red color for error messages */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Registration Form</h2>
+        <form id="registrationForm">
+            <div class="input-container">
+                <input type="text" id="firstName" placeholder="First Name" required>
+            </div>
+            <div class="input-container">
+                <input type="text" id="lastName" placeholder="Last Name" required>
+            </div>
+            <div class="input-container">
+                <input type="text" id="address" placeholder="Address" required>
+            </div>
+            <div class="gender-container">
+                <label><input type="radio" name="gender" value="male" required> Male</label>
+                <label><input type="radio" name="gender" value="female"> Female</label>
+                <label><input type="radio" name="gender" value="other"> Other</label>
+            </div>
+            <div class="input-container">
+                <input type="date" id="birthDate" placeholder="Birth Date" required>
+            </div>
+            <div class="input-container">
+                <input type="text" id="contactNumber" placeholder="Contact Number" required>
+            </div>
+            <div class="input-container">
+                <input type="text" id="collegeName" placeholder="College Name" required>
+            </div>
+            <div class="input-container">
+                <input type="text" id="collegeAddress" placeholder="College Address" required>
+            </div>
+            <div class="input-container">
+                <input type="text" id="course" placeholder="Course Pursuing" required>
+            </div>
+            <div class="input-container">
+                <input type="text" id="yearJoining" placeholder="Year of Joining" required>
+            </div>
+            <div class="input-container">
+                <input type="text" id="yearPassing" placeholder="Year of Passing" required>
+            </div>
+            <div class="captcha-container">
+                <div class="captcha" id="captcha"></div>
+                <button type="button" id="refreshCaptcha" class="refresh-button">Refresh</button>
+            </div>
+            <div class="input-container">
+                <input type="text" id="captchaInput" placeholder="Enter CAPTCHA" required>
+            </div>
+            <button type="submit">Register</button>
+            <div id="message" class="message"></div>
+        </form>
+    </div>
+
+    <script>
+        // Function to generate a simple CAPTCHA
+        function generateCaptcha() {
+            const captcha = Math.random().toString(36).substring(2, 8); // Generate a random string
+            document.getElementById('captcha').textContent = captcha;
+            return captcha;
+        }
+
+        let currentCaptcha = generateCaptcha(); // Generate initial CAPTCHA
+
+        // Refresh CAPTCHA
+        document.getElementById('refreshCaptcha').addEventListener('click', function() {
+            currentCaptcha = generateCaptcha();
+        });
+
+        // Registration form submission
+        document.getElementById('registrationForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting the default way
+
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const address = document.getElementById('address').value;
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const birthDate = document.getElementById('birthDate').value;
+            const contactNumber = document.getElementById('contactNumber').value;
+            const collegeName = document.getElementById('collegeName').value;
+            const collegeAddress = document.getElementById('collegeAddress').value;
+            const course = document.getElementById('course').value;
+            const yearJoining = document.getElementById('yearJoining').value;
+            const yearPassing = document.getElementById('yearPassing').value;
+            const captchaInput = document.getElementById('captchaInput').value;
+
+            // Validate CAPTCHA
+            if (captchaInput !== currentCaptcha) {
+                document.getElementById('message').textContent = 'CAPTCHA does not match. Please try again.';
+                return;
+            }
+
+            // Validate all fields (you can add more specific validation as needed)
+            if (!firstName || !lastName || !address || !gender || !birthDate || !contactNumber || !collegeName || !collegeAddress || !course || !yearJoining || !yearPassing) {
+                document.getElementById('message').textContent = 'Please fill in all fields.';
+                return;
+            }
+
+            // Simulate a successful registration
+            document.getElementById('message').textContent = 'Registration successful!';
+            document.getElementById('message').style.color = 'green';
+
+            // Here you can add code to send the data to your server
+            console.log({
+                firstName,
+                lastName,
+                address,
+                gender,
+                birthDate,
+                contactNumber,
+                collegeName,
+                collegeAddress,
+                course,
+                yearJoining,
+                yearPassing
+            });
+        });
+    </script>
+</body>
+</html>
