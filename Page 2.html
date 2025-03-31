@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Form</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to right, #ffffff, #f0f0f0);
+            font-family: 'Arial', sans-serif;
+            padding: 20px; /* Add padding to prevent content from touching edges */
+            box-sizing: border-box;
+        }
+        .input-container {
+            margin: 5px 0; /* Reduced margin for smaller gaps */
+            display: flex;
+            align-items: center;
+            width: 100%; /* Full width */
+        }
+        .input-container label {
+            margin-right: 5px; /* Reduced space between label and input */
+            font-size: 14px;
+            color: #333;
+            flex: 1; /* Allow label to take space */
+        }
+        input[type="text"], textarea {
+            flex: 1;
+            padding: 8px; /* Slightly reduced padding */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-right: 5px; /* Reduced space between inputs */
+        }
+        textarea {
+            resize: vertical; /* Allow vertical resizing */
+            min-height: 60px; /* Minimum height for the textarea */
+        }
+        button {
+            width: 48%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px; /* Space between buttons */
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .reset-button {
+            background-color: orange; /* Change reset button color to orange */
+        }
+        .message {
+            text-align: center;
+            margin-top: 10px;
+            color: red;
+        }
+        .row {
+            display: flex;
+            justify-content: flex-start; /* Align items to the left */
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="row" style="justify-content: center;">
+        <div class="input-container">
+            <label for="name">Name:</label>
+            <input type="text" id="name" placeholder="Enter your name" required>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="input-container">
+            <label for="reference1">Reference 1:</label>
+            <textarea id="reference1" placeholder="Enter reference 1" required></textarea>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="input-container">
+            <label for="reference2">Reference 2:</label>
+            <textarea id="reference2" placeholder="Enter reference 2" required></textarea>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="input-container">
+            <label for="reference3">Reference 3:</label>
+            <textarea id="reference3" placeholder="Enter reference 3" required></textarea>
+        </div>
+    </div>
+
+    <div class="row" style="justify-content: center;">
+        <button type="submit">Submit</button>
+        <button type="reset" class="reset-button">Reset</button>
+    </div>
+    <div id="message" class="message"></div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting the default way
+
+            // Collect form data
+            const name = document.getElementById('name').value;
+            const reference1 = document.getElementById('reference1').value;
+            const reference2 = document.getElementById('reference2').value;
+            const reference3 = document.getElementById('reference3').value;
+
+            // Here you can handle the form submission, e.g., send data to the server
+            document.getElementById('message').textContent = 'Profile submitted successfully!';
+            document.getElementById('message').style.color = 'green';
+        });
+    </script>
+</body>
+</html>
