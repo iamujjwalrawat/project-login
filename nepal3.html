@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Form - Page 3</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to right, #ffffff, #f0f0f0);
+            font-family: 'Arial', sans-serif;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+        }
+        .input-container {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .input-container label {
+            margin-right: 10px; /* Space between label and input */
+            font-size: 14px;
+            color: #333;
+            flex: 1;
+            text-align: right; /* Align label text to the right */
+        }
+        input[type="text"], select, input[type="file"] {
+            flex: 2; /* Adjusted to give more space to input fields */
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 48%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .reset-button {
+            background-color: orange;
+        }
+        .message {
+            text-align: center;
+            margin-top: 10px;
+            color: red;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        #photoPreview {
+            margin: 20px 0; /* Add margin for spacing */
+            max-width: 200px; /* Set a max width for the preview */
+            max-height: 200px; /* Set a max height for the preview */
+            display: none; /* Initially hidden */
+        }
+        .photo-container {
+            display: flex;
+            justify-content: center; /* Center the photo preview */
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Profile - Page 3</h2>
+    <form id="profileFormPage3">
+        <div class="photo-container">
+            <img id="photoPreview" alt="Photo Preview">
+        </div>
+        <div class="input-container">
+            <label for="photoUpload">Upload Photo:</label>
+            <input type="file" id="photoUpload" accept="image/*" required>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="savedNumber">Saved Number:</label>
+                <input type="text" id="savedNumber" placeholder="Auto-saved number" readonly>
+            </div>
+            <div class="input-container">
+                <label for="reference">Reference:</label>
+                <input type="text" id="reference" placeholder="Enter reference" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="additionalInfo1">Additional Info 1:</label>
+                <input type="text" id="additionalInfo1" placeholder="Enter additional info 1" required>
+            </div>
+            <div class="input-container">
+                <label for="additionalInfo2">Additional Info 2:</label>
+                <input type="text" id="additionalInfo2" placeholder="Enter additional info 2" required>
+            </div>
+            <div class="input-container">
+                <label for="additionalInfo3">Additional Info 3:</label>
+                <input type="text" id="additionalInfo3" placeholder="Enter additional info 3" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="selectOption">Select Option:</label>
+                <select id="selectOption" required>
+                    <option value="" disabled selected>Select an option</option>
+                    <option value="option1">Option 1</option>
+                    <option value="option2">Option 2</option>
+                    <option value="option3">Option 3</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row" style="justify-content: center;">
+            <button type="submit">Submit</button>
+            <button type="reset" class="reset-button">Reset</button>
+        </div>
+        <div id="message" class="message"></div>
+    </form>
+
+    <script>
+        // Simulate loading the saved number from local storage
+        const savedNumber = localStorage.getItem('savedNumber') || 'No number saved';
+        document.getElementById('savedNumber').value = savedNumber;
+
+        // Preview the uploaded photo
+        document.getElementById('photoUpload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const photoPreview = document.getElementById('photoPreview');
+                photoPreview.src = e.target.result; // Set the src to the uploaded image
+                photoPreview.style.display = 'block'; // Show the image
+            };
+
+            if (file) {
+                reader.readAsDataURL(file); // Read the file as a data URL
+            }
+        });
+
+        document.getElementById('profileFormPage3').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const reference = document.getElementById('reference').value;
+            const additionalInfo1 = document.getElementById('additionalInfo1').value;
+            const additionalInfo2 = document.getElementById('additionalInfo2').value;
+            const additionalInfo3 = document.getElementById('additionalInfo3').value;
+            const selectOption = document.getElementById('selectOption').value;
+            const photoUpload = document.getElementById('photoUpload').files[0];
+
+            // Simulate a PUT request to save the data
+            const dataToSave = {
+                savedNumber: savedNumber,
+                reference: reference,
+                additionalInfo1: additionalInfo1,
+                additionalInfo2: additionalInfo2,
+                additionalInfo3: additionalInfo3,
+                selectOption: selectOption,
+                photo: photoUpload ? photoUpload.name : 'No photo uploaded'
+            };
+
+            // Simulate an AJAX PUT request
+            console.log('Data saved:', dataToSave);
+            document.getElementById('message').textContent = 'Profile data submitted successfully!';
+            document.getElementById('message').style.color = 'green';
+
+            // Optionally, you can save the data to local storage or send it to a server
+            // localStorage.setItem('profileData', JSON.stringify(dataToSave));
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Form</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to right, #ffffff, #f0f0f0);
+            font-family: 'Arial', sans-serif;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+        }
+        .profile-photo-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .profile-photo-preview {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-right: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .profile-photo-preview img {
+            width: 100%;
+            height: auto;
+        }
+        .input-container {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .input-container label {
+            margin-right: 5px;
+            font-size: 14px;
+            color: #333;
+            flex: 1;
+        }
+        .input-container input[type="file"] {
+            margin-left: 5px;
+            flex: 0;
+            width: 80px;
+        }
+        input[type="number"], select, input[type="text"], input[type="date"], textarea {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-right: 5px;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        button {
+            width: 48%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .reset-button {
+            background-color: orange;
+        }
+        .message {
+            text-align: center;
+            margin-top: 10px;
+            color: red;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Profile</h2>
+    <form id="profileForm">
+        <div class="profile-photo-container">
+            <div class="profile-photo-preview" id="photoPreviewContainer">
+                <p>No photo selected</p>
+            </div>
+            <input type="file" id="profilePhoto" accept="image/png, image/jpeg, image/jpg" required>
+        </div>
+        <div class="file-info">Max size: 2 MB (PNG, JPEG, JPG)</div>
+        
+        <div class="row">
+            <div class="input-container">
+                <label for="name">Name:</label>
+                <input type="text" id="name" placeholder="Enter your name" required>
+            </div>
+            <div class="input-container">
+                <label for="gender">Gender:</label>
+                <select id="gender" required>
+                    <option value="" disabled selected>Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="dob">D.O.B:</label>
+                <input type="date" id="dob" required>
+            </div>
+            <div class="input-container">
+                <label for="age">Age:</label>
+                <input type="number" id="age" placeholder="Enter your age" min="0" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="email">Email:</label>
+                <input type="text" id="email" placeholder="Enter your email" required>
+            </div>
+            <div class="input-container">
+                <label for="phone">Phone:</label>
+                <input type="text" id="phone" placeholder="Enter your phone number" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="address">Address:</label>
+                <input type="text" id="address" placeholder="Enter your address" required>
+            </div>
+            <div class="input-container">
+                <label for="city">City:</label>
+                <input type="text" id="city" placeholder="Enter your city" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="state">State:</label>
+                <input type="text" id="state" placeholder="Enter your state" required>
+            </div>
+            <div class="input-container">
+                <label for="country">Country:</label>
+                <input type="text" id="country" placeholder="Enter your country" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="zip">ZIP Code:</label>
+                <input type="text" id="zip" placeholder="Enter your ZIP code" required>
+            </div>
+            <div class="input-container">
+                <label for="occupation">Occupation:</label>
+                <input type="text" id="occupation" placeholder="Enter your occupation" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="skills">Skills:</label>
+                <input type="text" id="skills" placeholder="Enter your skills">
+            </div>
+            <div class="input-container">
+                <label for="experience">Experience:</label>
+                <input type="text" id="experience" placeholder="Enter your experience">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="certifications">Certifications:</label>
+                <input type="text" id="certifications" placeholder="Enter your certifications">
+            </div>
+            <div class="input-container">
+                <label for="languages">Languages:</label>
+                <input type="text" id="languages" placeholder="Languages spoken">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="availability">Availability:</label>
+                <input type="text" id="availability" placeholder="Enter your availability">
+            </div>
+            <div class="input-container">
+                <label for="references">References:</label>
+                <textarea id="references" placeholder="Enter references"></textarea>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-container">
+                <label for="musicSelect">Select a Number:</label>
+                <select id="musicSelect">
+                    <option value="1">Number 1</option>
+                    <option value="2">Number 2</option>
+                    <option value="3">Number 3</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row" style="justify-content: center;">
+            <button type="submit">Submit</button>
+            <button type="reset" class="reset-button">Reset</button>
+        </div>
+        <div id="message" class="message"></div>
+    </form>
+
+    <script>
+        const profilePhotoInput = document.getElementById('profilePhoto');
+        const photoPreviewContainer = document.getElementById('photoPreviewContainer');
+
+        profilePhotoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoPreviewContainer.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    photoPreviewContainer.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            } else {
+                photoPreviewContainer.innerHTML = '<p>No photo selected</p>';
+            }
+        });
+
+        document.getElementById('profileForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const profilePhoto = profilePhotoInput.files[0];
+            const name = document.getElementById('name').value;
+            const gender = document.getElementById('gender').value;
+            const dob = document.getElementById('dob').value;
+            const age = document.getElementById('age').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            const city = document.getElementById('city').value;
+            const state = document.getElementById('state').value;
+            const country = document.getElementById('country').value;
+            const zip = document.getElementById('zip').value;
+            const occupation = document.getElementById('occupation').value;
+            const skills = document.getElementById('skills').value;
+            const experience = document.getElementById('experience').value;
+            const certifications = document.getElementById('certifications').value;
+            const languages = document.getElementById('languages').value;
+            const availability = document.getElementById('availability').value;
+            const references = document.getElementById('references').value;
+            const selectedNumber = document.getElementById('musicSelect').value;
+
+            if (profilePhoto && profilePhoto.size > 2 * 1024 * 1024) {
+                document.getElementById('message').textContent = 'Profile photo must be less than 2MB.';
+                return;
+            }
+
+            // Simulate a GET request
+            const response = `Data retrieved for number: ${selectedNumber}`;
+            document.getElementById('message').textContent = response;
+
+            // Simulate a PUT request
+            console.log(`Profile submitted successfully!`);
+            console.log({
+                name,
+                gender,
+                dob,
+                age,
+                email,
+                phone,
+                address,
+                city,
+                state,
+                country,
+                zip,
+                occupation,
+                skills,
+                experience,
+                certifications,
+                languages,
+                availability,
+                references,
+                selectedNumber
+            });
+            document.getElementById('message').style.color = 'green';
+        });
+    </script>
+</body>
+</html>
