@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Friendly DB Query Builder</title>
+    <!-- Bootstrap 5.3.0 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap 5.3.0 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 30px;
+        }
+        h1 {
+            font-weight: 700;
+            color: #007bff;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 1px 1px 2px #ddd;
+        }
+        .form-label {
+            font-weight: 600;
+        }
+        .aggregate-select {
+            max-width: 130px;
+        }
+        .column-row {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.85);
+            box-shadow: 0 2px 8px rgb(0 123 255 / 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #resultsArea {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            padding: 20px;
+            margin-top: 30px;
+            min-height: 140px;
+            white-space: pre-wrap;
+            font-family: Consolas, monospace;
+        }
+        button:focus {
+            box-shadow: 0 0 0 0.3rem rgba(0, 123, 255, 0.5);
+            outline: none;
+        }
+        #alertContainer {
+            margin-top: 1rem;
+        }
+        .filter-row {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-row input[type="text"] {
+            flex: 1 1 300px;
+        }
+        .filter-row button {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Friendly DB Query Builder</h1>
+
+        <form id="queryForm" class="p-4 bg-white rounded shadow-sm">
+            <div class="mb-3">
+                <label for="tableSelect" class="form-label">Select Table</label>
+                <select id="tableSelect" class="form-select" required>
+                    <option value="" selected disabled>Choose a table</option>
+                </select>
+            </div>
+
+            <div class="mb-3" id="columnsContainer" style="display:none;">
+                <label class="form-label">Select Columns & Aggregates</label>
+                <div id="columnsList">
+                    <!-- dynamically filled -->
+                </div>
+            </div>
+
+            <div class="mb-3" id="filtersContainer" style="display:none;">
+                <label class="form-label">Filters (WHERE conditions)</label>
+                <div id="filtersList"></div>
+                <div class="filter-row">
+                    <input type="text" id="newFilterInput" class="form-control" placeholder='E.g. age > 30' aria-label="New filter condition">
+                    <button type="button" id="addFilterBtn" class="btn btn-outline-primary">Add Filter</button>
+                </div>
+                <div class="form-text">Add one or more conditions to filter your query results.</div>
+            </div>
+
+            <div id="alertContainer" aria-live="polite"></div>
+
+            <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+                <button type="submit" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-search me-2"></i> Submit
+                </button>
+                <button type="reset" class="btn btn-warning btn-lg px-4">
+                    <i class="bi bi-arrow-clockwise me-2"></i> Reset
+                </button>
+            </div>
+        </form>
+
+        <div id="resultsArea" class="mt-4 d-none" tabindex="0" aria-live="polite"></div>
+    </div>
+    
+    <script>
+        // Simulated database metadata - tables and columns (with types)
+        const dbSchema = {
+            "customers": [
+                {name: "id", type: "int"},
+                {name: "name", type: "string"},
+                {name: "email", type: "string"},
+                {name: "signup_date", type: "date"},
+                {name: "total_purchases", type: "float"},
+                {name: "city", type: "string"}
+            ],
+            "orders": [
+                {name: "order_id", type: "int"},
+                {name: "customer_id", type: "int"},
+                {name: "order_date", type: "date"},
+                {name: "order_amount", type: "float"},
+                {name: "status", type: "string"}
+            ],
+            "products": [
+                {name: "product_id", type: "int"},
+                {name: "product_name", type: "string"},
+                {name: "category", type: "string"},
+                {name: "price", type: "float"},
+                {name: "stock_quantity", type: "int"}
+            ],
+            "employees": [
+                {name: "employee_id", type: "int"},
+                {name: "first_name", type: "string"},
+                {name: "last_name", type: "string"},
+                {name: "department", type: "string"},
+                {name: "salary", type: "float"},
+                {name: "hire_date", type: "date"}
+            ]
+        };
+
+        const aggregateFunctions = [
+            {value: "", text: "None"},
+            {value: "SUM", text: "SUM"},
+            {value: "AVG", text: "AVG"},
+            {value: "MIN", text: "MIN"},
+            {value: "MAX", text: "MAX"},
+            {value: "COUNT", text: "COUNT"}
+        ];
+
+        // For dynamic filters
+        let filters = [];
+
+        // Initialize table selector with options
+        $(function() {
+            const tableSelect = $('#tableSelect');
+            Object.keys(dbSchema).forEach(table => {
+                tableSelect.append($('<option>').val(table).text(table.charAt(0).toUpperCase() + table.slice(1)));
+            });
+        });
+
+        // When table changes: populate columns and reset filters
+        $('#tableSelect').on('change', function() {
+            const table = $(this).val();
+            const columns = dbSchema[table];
+            const columnsList = $('#columnsList');
+            columnsList.empty();
+            filters = [];
+            $('#filtersList').empty();
+            $('#newFilterInput').val('');
+            $('#alertContainer').empty();
+            $('#resultsArea').empty().addClass('d-none');
+
+            if (!columns) {
+                $('#columnsContainer, #filtersContainer').hide();
+                return;
+            }
+
+            columns.forEach((col, idx) => {
+                const isNumeric = ["int", "float"].includes(col.type);
+                const colRow = $('<div>').addClass('column-row');
+
+                const checkbox = $('<input>')
+                    .attr('type', 'checkbox')
+                    .attr('id', `col_${idx}`)
+                    .attr('value', col.name)
+                    .addClass('form-check-input');
+
+                const label = $('<label>').attr('for', `col_${idx}`)
+                    .addClass('form-check-label flex-grow-1')
+                    .text(`${col.name} (${col.type})`);
+
+                colRow.append(checkbox).append(label);
+
+                if (isNumeric) {
+                    const aggSelect = $('<select>').addClass('form-select aggregate-select')
+                        .attr('id', `agg_${idx}`)
+                        .attr('disabled', true)
+                        .attr('aria-label', `Aggregate function for ${col.name}`);
+
+                    aggregateFunctions.forEach(agg => {
+                        aggSelect.append($('<option>').val(agg.value).text(agg.text));
+                    });
+
+                    checkbox.on('change', function() {
+                        aggSelect.prop('disabled', !this.checked);
+                        if (!this.checked) aggSelect.val('');
+                    });
+
+                    colRow.append(aggSelect);
+                } else {
+                    // just spacing to align columns
+                    colRow.append($('<div>').css('width', '140px'));
+                }
+
+                columnsList.append(colRow);
+            });
+
+            $('#columnsContainer, #filtersContainer').fadeIn();
+        });
+
+        // Add new filter control
+        $('#addFilterBtn').on('click', function(){
+            const newFilterVal = $('#newFilterInput').val().trim();
+            if(newFilterVal === ''){
+                showAlert('Filter cannot be empty.', 'warning');
+                return;
+            }
+            filters.push(newFilterVal);
+            renderFilters();
+            $('#newFilterInput').val('');
+            $('#alertContainer').empty();
+            $('#resultsArea').empty().addClass('d-none');
+        });
+
+        // Render dynamic filters with remove buttons
+        function renderFilters(){
+            const filtersList = $('#filtersList');
+            filtersList.empty();
+            filters.forEach((filter, idx) => {
+                const filterBadge = $('<div>').addClass('alert alert-secondary d-flex justify-content-between align-items-center').css('padding', '0.25rem 0.5rem').css('margin-bottom', '0.4rem');
+                filterBadge.text(filter);
+
+                const rmBtn = $('<button>').addClass('btn-close btn-close-white btn-sm ms-2').attr('aria-label', 'Remove filter');
+                rmBtn.on('click', ()=> {
+                    filters.splice(idx,1);
+                    renderFilters();
+                    $('#alertContainer').empty();
+                    $('#resultsArea').empty().addClass('d-none');
+                });
+
+                filterBadge.append(rmBtn);
+                filtersList.append(filterBadge);
+            });
+        }
+
+        // Show alert message utility
+        function showAlert(message, type){
+            const alertHtml = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+            $('#alertContainer').html(alertHtml);
+        }
+
+        // On form reset clear everything
+        $('#queryForm').on('reset', function(){
+            $('#columnsContainer, #filtersContainer').fadeOut();
+            $('#columnsList').empty();
+            filters = [];
+            $('#filtersList').empty();
+            $('#newFilterInput').val('');
+            $('#alertContainer').empty();
+            $('#resultsArea').empty().addClass('d-none');
+        });
+
+        // On submit build query and validate
+        $('#queryForm').on('submit', function(e){
+            e.preventDefault();
+            $('#alertContainer').empty();
+            $('#resultsArea').removeClass('d-none').empty();
+
+            const table = $('#tableSelect').val();
+            if(!table){
+                showAlert('Please select a table.', 'warning');
+                return;
+            }
+
+            // Collect selected columns + aggregates
+            let selectedCols = [];
+            $('#columnsList .column-row').each(function(){
+                const checkbox = $(this).find('input[type="checkbox"]');
+                if(checkbox.is(':checked')){
+                    const colName = checkbox.val();
+                    const aggSelect = $(this).find('select.aggregate-select');
+                    const aggFunc = aggSelect.length ? aggSelect.val() : '';
+                    selectedCols.push({name: colName, aggregate: aggFunc});
+                }
+            });
+
+            if(selectedCols.length === 0){
+                showAlert('Please select at least one column.', 'warning');
+                return;
+            }
+
+            // Combine filters with AND
+            let filterCond = filters.join(' AND ');
+
+            // Build SELECT part
+            let selectParts = selectedCols.map(c => {
+                if(c.aggregate){
+                    return `${c.aggregate}(${c.name}) AS ${c.aggregate.toLowerCase()}_${c.name}`;
+                }
+                return c.name;
+            });
+            let query = `SELECT ${selectParts.join(', ')} FROM ${table}`;
+            if(filterCond) query += ` WHERE ${filterCond}`;
+
+            $('#resultsArea').html(`<h5>Generated SQL Query:</h5><pre>${query}</pre>`);
+            console.log({table, columns: selectedCols, filters});
+        });
+    </script>
+</body>
+</html>
+

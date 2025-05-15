@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VRLI Style Modern DB Query Builder</title>
+  
+  <!-- Bootstrap 5.3 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <!-- Bootstrap Icons -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    rel="stylesheet"
+  />
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+    /* Web3.0 / futuristic aesthetic colors & fonts */
+    :root {
+      --bg-color: #0f111a;
+      --card-bg: rgba(30, 35, 56, 0.8);
+      --blue-accent: #4ec8f8;
+      --blue-glow: rgba(78, 200, 248, 0.75);
+      --text-color: #c3d3fb;
+      --text-muted: #7a8bbf;
+      --btn-bg: #3a4a8f;
+      --btn-hover: #5579cc;
+      --border-glow: #53aaff;
+      --input-bg: #1c2136;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: radial-gradient(circle at center, #121625 0%, #0a0c18 100%);
+      font-family: 'Poppins', sans-serif;
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem 1rem;
+      user-select: none;
+    }
+    body {
+      overflow-y: auto;
+    }
+    .container {
+      max-width: 650px;
+      width: 100%;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      box-shadow:
+        0 0 20px var(--blue-glow),
+        inset 0 0 30px rgba(78, 200, 248, 0.3);
+      backdrop-filter: saturate(180%) blur(24px);
+      -webkit-backdrop-filter: saturate(180%) blur(24px);
+      color: var(--text-color);
+    }
+    h1 {
+      font-weight: 700;
+      font-size: 2.8rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      text-shadow:
+        0 0 8px var(--blue-accent),
+        0 0 10px var(--blue-accent);
+      user-select: text;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 0.4rem;
+      color: var(--text-color);
+      user-select: text;
+    }
+    /* Form Controls */
+    .form-select, .form-control {
+      background-color: var(--input-bg);
+      border: 1.5px solid var(--border-glow);
+      border-radius: 8px;
+      color: var(--text-color);
+      transition: border-color 0.3s ease;
+      font-size: 1rem;
+      padding: 0.45rem 1rem;
+      user-select: text;
+    }
+    .form-select:focus, .form-control:focus {
+      border-color: var(--blue-accent);
+      box-shadow: 0 0 15px var(--blue-glow);
+      outline: none;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+    }
+    /* Custom checkboxes inspired by VRLI futuristic style */
+    .form-check {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 12px;
+      user-select: none;
+    }
+    .form-check-input {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      appearance: none;
+      border: 2px solid var(--border-glow);
+      border-radius: 6px;
+      background: transparent;
+      position: relative;
+      transition: background-color 0.25s ease, border-color 0.25s ease;
+    }
+    .form-check-input:hover {
+      border-color: var(--blue-accent);
+      box-shadow: 0 0 10px var(--blue-glow);
+    }
+    .form-check-input:checked {
+      background: var(--blue-accent);
+      border-color: var(--blue-accent);
+      box-shadow:
+        0 0 10px var(--blue-glow),
+        inset 0 0 8px var(--blue-glow);
+    }
+    .form-check-input:checked::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 7px;
+      width: 6px;
+      height: 12px;
+      border: solid var(--card-bg);
+      border-width: 0 3px 3px 0;
+      transform: rotate(45deg);
+    }
+    .form-check-label {
+      cursor: pointer;
+      user-select: text;
+      font-size: 1rem;
+      color: var(--text-color);
+      flex-grow: 1;
+    }
+    .aggregate-select {
+      max-width: 120px;
+      background-color: var(--input-bg);
+      border-radius: 6px;
+      border: 1.4px solid var(--border-glow);
+      color: var(--text-color);
+      font-weight: 600;
+      user-select: text;
+    }
+    .aggregate-select:focus {
+      border-color: var(--blue-accent);
+      box-shadow: 0 0 12px var(--blue-glow);
+      outline: none;
+    }
+    /* Buttons */
+    button {
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      color: var(--text-color);
+    }
+    .btn-primary {
+      background-color: var(--btn-bg);
+      box-shadow: 0 0 8px var(--blue-glow);
+    }
+    .btn-primary:hover {
+      background-color: var(--btn-hover);
+      box-shadow: 0 0 16px var(--blue-glow);
+    }
+    .btn-warning {
+      background-color: #b46700;
+      box-shadow: 0 0 8px #d6a10f;
+    }
+    .btn-warning:hover {
+      background-color: #cc8300;
+      box-shadow: 0 0 16px #f3bc2d;
+    }
+    /* Results area */
+    #resultsArea {
+      margin-top: 2rem;
+      background: rgba(30, 35, 56, 0.9);
+      padding: 1.3rem 1.8rem;
+      border-radius: 12px;
+      color: var(--blue-accent);
+      font-family: 'JetBrains Mono', monospace, monospace;
+      font-size: 1.1rem;
+      user-select: text;
+      white-space: pre-wrap;
+      box-shadow: inset 0 0 20px var(--blue-glow);
+      min-height: 130px;
+    }
+    /* Responsive */
+    @media (max-width: 520px) {
+      .column-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .aggregate-select {
+        width: 100%;
+        max-width: none;
+        margin-top: 0.5rem;
+      }
+    }
+    /* Column rows */
+    .column-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(10, 14, 31, 0.5);
+      padding: 10px 16px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      gap: 10px;
+      color: var(--text-color);
+      box-shadow: 0 0 8px rgba(78, 200, 248, 0.2);
+      font-weight: 600;
+      user-select: text;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <h1>VRLI Style Modern DB Query Builder</h1>
+    <form id="queryForm" autocomplete="off">
+      <label for="tableSelect">Select Table</label>
+      <select id="tableSelect" class="form-select" required aria-describedby="tableHelp">
+        <option value="" disabled selected>Choose a table</option>
+      </select>
+      <small id="tableHelp" class="text-muted d-block mb-3">Choose one of the available database tables</small>
+
+      <div id="columnsContainer" style="display:none;">
+        <label>Select Columns & Aggregates</label>
+        <div id="columnsList"></div>
+      </div>
+
+      <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+        <button type="submit" class="btn btn-primary px-5">
+          <i class="bi bi-search me-2"></i> Generate Query
+        </button>
+        <button type="reset" class="btn btn-warning px-5">
+          <i class="bi bi-arrow-clockwise me-2"></i> Reset
+        </button>
+      </div>
+    </form>
+
+    <div id="resultsArea" tabindex="0" aria-live="polite" aria-atomic="true" style="display:none"></div>
+  </div>
+
+  <script>
+    const dbSchema = {
+      customers: [
+        { name: "id", type: "int" },
+        { name: "name", type: "string" },
+        { name: "email", type: "string" },
+        { name: "signup_date", type: "date" },
+        { name: "total_purchases", type: "float" },
+        { name: "city", type: "string" }
+      ],
+      orders: [
+        { name: "order_id", type: "int" },
+        { name: "customer_id", type: "int" },
+        { name: "order_date", type: "date" },
+        { name: "order_amount", type: "float" },
+        { name: "status", type: "string" }
+      ],
+      products: [
+        { name: "product_id", type: "int" },
+        { name: "product_name", type: "string" },
+        { name: "category", type: "string" },
+        { name: "price", type: "float" },
+        { name: "stock_quantity", type: "int" }
+      ],
+      employees: [
+        { name: "employee_id", type: "int" },
+        { name: "first_name", type: "string" },
+        { name: "last_name", type: "string" },
+        { name: "department", type: "string" },
+        { name: "salary", type: "float" },
+        { name: "hire_date", type: "date" }
+      ]
+    };
+
+    const aggregateFunctions = [
+      { value: "", text: "None" },
+      { value: "SUM", text: "SUM" },
+      { value: "AVG", text: "AVG" },
+      { value: "MIN", text: "MIN" },
+      { value: "MAX", text: "MAX" },
+      { value: "COUNT", text: "COUNT" }
+    ];
+
+    const tableSelect = document.getElementById('tableSelect');
+    const columnsContainer = document.getElementById('columnsContainer');
+    const columnsList = document.getElementById('columnsList');
+    const resultsArea = document.getElementById('resultsArea');
+    const queryForm = document.getElementById('queryForm');
+
+    // Populate table options
+    Object.keys(dbSchema).forEach(table => {
+      const option = document.createElement('option');
+      option.value = table;
+      option.textContent = table.charAt(0).toUpperCase() + table.slice(1);
+      tableSelect.appendChild(option);
+    });
+
+    // On table change, show columns
+    tableSelect.addEventListener('change', () => {
+      const selectedTable = tableSelect.value;
+      columnsList.innerHTML = '';
+      resultsArea.style.display = 'none';
+      if (!selectedTable || !dbSchema[selectedTable]) {
+        columnsContainer.style.display = 'none';
+        return;
+      }
+      const columns = dbSchema[selectedTable];
+      columns.forEach((col, idx) => {
+        const colRow = document.createElement('div');
+        colRow.className = 'column-row';
+
+        // Checkbox
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `col_${idx}`;
+        checkbox.value = col.name;
+        checkbox.className = 'form-check-input';
+
+        // Label
+        const label = document.createElement('label');
+        label.htmlFor = `col_${idx}`;
+        label.className = 'form-check-label';
+        label.textContent = `${col.name} (${col.type})`;
+
+        colRow.appendChild(checkbox);
+        colRow.appendChild(label);
+
+        // Aggregate select for numeric types
+        if (col.type === 'int' || col.type === 'float') {
+          const aggSelect = document.createElement('select');
+          aggSelect.className = 'aggregate-select form-select';
+          aggSelect.disabled = true;
+          aggSelect.setAttribute('aria-label', `Aggregate function for ${col.name}`);
+
+          aggregateFunctions.forEach(agg => {
+            const opt = document.createElement('option');
+            opt.value = agg.value;
+            opt.textContent = agg.text;
+            aggSelect.appendChild(opt);
+          });
+
+          checkbox.addEventListener('change', () => {
+            aggSelect.disabled = !checkbox.checked;
+            if (!checkbox.checked) aggSelect.value = '';
+          });
+
+          colRow.appendChild(aggSelect);
+        } else {
+          // Spacer for alignment
+          const spacer = document.createElement('div');
+          spacer.style.width = '130px';
+          colRow.appendChild(spacer);
+        }
+
+        columnsList.appendChild(colRow);
+      });
+      columnsContainer.style.display = 'block';
+    });
+
+    // On submit generate query
+    queryForm.addEventListener('submit', e => {
+      e.preventDefault();
+      resultsArea.style.display = 'none';
+      const table = tableSelect.value;
+      if (!table) {
+        alert('Please select a table.');
+        return;
+      }
+      const selectedColumns = [];
+      const selectedAggregates = [];
+
+      const rows = columnsList.querySelectorAll('.column-row');
+      rows.forEach(row => {
+        const checkbox = row.querySelector('input[type=checkbox]');
+        if (checkbox.checked) {
+          const colName = checkbox.value;
+          const aggSelect = row.querySelector('select.aggregate-select');
+          if (aggSelect && aggSelect.value) {
+            selectedColumns.push(`${aggSelect.value}(${colName}) AS ${aggSelect.value.toLowerCase()}_${colName}`);
+          } else {
+            selectedColumns.push(colName);
+          }
+        }
+      });
+
+      if (selectedColumns.length === 0) {
+        alert('Please select at least one column.');
+        return;
+      }
+
+      const query = `SELECT ${selectedColumns.join(', ')} FROM ${table}`;
+      resultsArea.textContent = query;
+      resultsArea.style.display = 'block';
+      resultsArea.focus();
+    });
+
+    // On reset hide columns and results
+    queryForm.addEventListener('reset', () => {
+      columnsContainer.style.display = 'none';
+      columnsList.innerHTML = '';
+      resultsArea.style.display = 'none';
+      resultsArea.textContent = '';
+    });
+  </script>
+</body>
+</html>
+

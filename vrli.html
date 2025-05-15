@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Responsive DB Query UI</title>
+    <!-- Bootstrap 5.3.0 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap 5.3.0 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 30px;
+        }
+        h1 {
+            font-weight: 700;
+            color: #007bff;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 1px 1px 2px #ddd;
+        }
+        .form-label {
+            font-weight: 600;
+        }
+        .aggregate-select {
+            max-width: 130px;
+        }
+        .column-row {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.85);
+            box-shadow: 0 2px 8px rgb(0 123 255 / 0.15);
+        }
+        #resultsArea {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            padding: 20px;
+            margin-top: 30px;
+            min-height: 140px;
+            overflow-wrap: break-word;
+        }
+        button:focus {
+            box-shadow: 0 0 0 0.3rem rgba(0, 123, 255, 0.5);
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Database Query Builder</h1>
+        <form id="queryForm" class="p-4 bg-white rounded shadow-sm">
+            <div class="mb-3">
+                <label for="tableSelect" class="form-label">Select Table</label>
+                <select id="tableSelect" class="form-select" required>
+                    <option value="" selected disabled>Choose a table</option>
+                </select>
+            </div>
+            <div class="mb-3" id="columnsContainer" style="display:none;">
+                <label class="form-label">Select Columns & Aggregates</label>
+                <div id="columnsList" class="row gy-2">
+                    <!-- dynamically filled -->
+                </div>
+            </div>
+
+            <div class="mb-3" id="filterContainer" style="display:none;">
+                <label for="filterText" class="form-label">Filter (WHERE clause)</label>
+                <input type="text" class="form-control" id="filterText" placeholder='E.g. "age > 30 AND city = \'NY\'"' />
+                <div class="form-text">Optional SQL-like filter conditions</div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg px-4">Submit</button>
+                <button type="reset" class="btn btn-warning btn-lg px-4">Reset</button>
+            </div>
+        </form>
+
+        <div id="resultsArea" class="mt-4 d-none"></div>
+    </div>
+
+    <script>
+        // Simulated database metadata - tables and columns (with types)
+        const dbSchema = {
+            "customers": [
+                {name: "id", type: "int"},
+                {name: "name", type: "string"},
+                {name: "email", type: "string"},
+                {name: "signup_date", type: "date"},
+                {name: "total_purchases", type: "float"},
+                {name: "city", type: "string"}
+            ],
+            "orders": [
+                {name: "order_id", type: "int"},
+                {name: "customer_id", type: "int"},
+                {name: "order_date", type: "date"},
+                {name: "order_amount", type: "float"},
+                {name: "status", type: "string"}
+            ],
+            "products": [
+                {name: "product_id", type: "int"},
+                {name: "product_name", type: "string"},
+                {name: "category", type: "string"},
+                {name: "price", type: "float"},
+                {name: "stock_quantity", type: "int"}
+            ],
+            "employees": [
+                {name: "employee_id", type: "int"},
+                {name: "first_name", type: "string"},
+                {name: "last_name", type: "string"},
+                {name: "department", type: "string"},
+                {name: "salary", type: "float"},
+                {name: "hire_date", type: "date"}
+            ]
+        };
+
+        const aggregateFunctions = [
+            {value: "", text: "None"},
+            {value: "SUM", text: "SUM"},
+            {value: "AVG", text: "AVG"},
+            {value: "MIN", text: "MIN"},
+            {value: "MAX", text: "MAX"},
+            {value: "COUNT", text: "COUNT"}
+        ];
+
+        // Initialize table selector with options
+        $(function() {
+            const tableSelect = $('#tableSelect');
+            Object.keys(dbSchema).forEach(table => {
+                tableSelect.append($('<option>').val(table).text(table.charAt(0).toUpperCase() + table.slice(1)));
+            });
+        });
+
+        // When table changes: populate columns list with checkboxes and aggregates where applicable
+        $('#tableSelect').on('change', function() {
+            const selectedTable = $(this).val();
+            const columns = dbSchema[selectedTable];
+            const container = $('#columnsList');
+            container.empty();
+
+            if (!columns) {
+                $('#columnsContainer, #filterContainer').hide();
+                return;
+            }
+
+            columns.forEach((col, index) => {
+                const isNumeric = ["int", "float"].includes(col.type);
+                // Bootstrap grid row with checkbox, label, and aggregate dropdown (if numeric)
+                const colRow = $('<div>').addClass('col-12 col-md-6 column-row d-flex align-items-center flex-wrap');
+
+                const checkbox = $('<input>')
+                    .attr('type', 'checkbox')
+                    .attr('id', `col_${index}`)
+                    .attr('value', col.name)
+                    .addClass('form-check-input me-2 column-checkbox');
+
+                const label = $('<label>').attr('for', `col_${index}`)
+                    .addClass('form-check-label flex-grow-1')
+                    .text(col.name + ` (${col.type})`);
+
+                colRow.append(checkbox).append(label);
+
+                if (isNumeric) {
+                    const aggSelect = $('<select>').addClass('form-select aggregate-select ms-auto')
+                        .attr('id', `agg_${index}`)
+                        .attr('disabled', true);
+
+                    aggregateFunctions.forEach(agg => {
+                        aggSelect.append($('<option>').val(agg.value).text(agg.text));
+                    });
+
+                    colRow.append(aggSelect);
+
+                    // Enable aggregate dropdown only if checkbox checked
+                    checkbox.on('change', function() {
+                        aggSelect.prop('disabled', !this.checked);
+                        // Reset to None if unchecked
+                        if (!this.checked) aggSelect.val('');
+                    });
+                }
+
+                container.append(colRow);
+            });
+
+            $('#columnsContainer, #filterContainer').fadeIn();
+            $('#resultsArea').addClass('d-none').empty();
+        });
+
+        // On reset clear results and hide columns/filter
+        $('#queryForm').on('reset', function() {
+            $('#columnsContainer, #filterContainer').fadeOut();
+            $('#resultsArea').addClass('d-none').empty();
+        });
+
+        // On submit: validate at least one column selected, and construct query string simulation
+        $('#queryForm').on('submit', function(e) {
+            e.preventDefault();
+            $('#resultsArea').removeClass('d-none').empty();
+            const table = $('#tableSelect').val();
+            if (!table) {
+                alert('Please select a table.');
+                return;
+            }
+            // Collect checked columns
+            let selectedCols = [];
+            $('#columnsList .column-row').each(function() {
+                const checkbox = $(this).find('.column-checkbox');
+                if (checkbox.is(':checked')) {
+                    const colName = checkbox.val();
+                    const aggSelect = $(this).find('select.aggregate-select');
+                    const aggFunc = aggSelect.length ? aggSelect.val() : "";
+                    selectedCols.push({ name: colName, aggregate: aggFunc });
+                }
+            });
+
+            if (selectedCols.length === 0) {
+                alert('Please select at least one column.');
+                return;
+            }
+
+            const filter = $('#filterText').val().trim();
+
+            // Build SQL query simulation string
+            let selectParts = selectedCols.map(col => {
+                if (col.aggregate) {
+                    return `${col.aggregate}(${col.name}) AS ${col.aggregate.toLowerCase()}_${col.name}`;
+                }
+                return col.name;
+            });
+
+            let query = `SELECT ${selectParts.join(', ')} FROM ${table}`;
+            if (filter) query += ` WHERE ${filter}`;
+
+            // Show the simulated query in the results area with nice formatting
+            const queryHtml = `<pre class="mb-0" style="white-space: pre-wrap; font-family: Consolas, monospace;">${query}</pre>`;
+            $('#resultsArea').html(`<h5>Simulated Query:</h5>${queryHtml}`);
+
+            // Also log the result object for demonstration
+            console.log({
+                table: table,
+                columns: selectedCols,
+                filter: filter
+            });
+        });
+    </script>
+</body>
+</html>
+
