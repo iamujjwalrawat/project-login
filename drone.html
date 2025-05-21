@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IntelliFusion: Global News Intelligence Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Bootstrap 5.3.0 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    html, body { height: 100%; background: #181a1b; color: #f5f5f5; }
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    #main-content { flex: 1 0 auto; display: flex; gap: 2rem; padding: 2rem 3vw; max-width: 1800px; margin: 0 auto; }
+    #map { height: 75vh; min-width: 60vw; border-radius: 1rem; box-shadow: 0 4px 24px #0008; }
+    #timeline { background: #23272b; border-radius: 1rem; box-shadow: 0 4px 24px #0007; padding: 1.5rem; width: 32vw; max-height: 75vh; overflow-y: auto; }
+    #timeline h2 { font-size: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #444; padding-bottom: 0.5rem; color: #8aff8a; }
+    .event { background: #23272b; border-left: 4px solid #8aff8a; margin-bottom: 1.2rem; padding: 1rem 1rem 0.5rem 1.2rem; border-radius: 0.5rem; transition: background 0.2s; cursor: pointer; }
+    .event:hover { background: #2e3238; }
+    .event .type { font-weight: 600; color: #8aff8a; font-size: 1.1rem; }
+    .event .timestamp { font-size: 0.92rem; color: #bbb; margin-bottom: 0.3rem; }
+    .event .content { font-size: 1.02rem; color: #fafafa; }
+    .event .signal.good { color: #3ec97c; }
+    .event .signal.normal { color: #ffec3d; }
+    .event .signal.danger { color: #ff5e5e; }
+    #footer { background: #181a1b; color: #aaa; text-align: center; font-size: 0.96rem; padding: 0.75rem 0 0.5rem 0; border-top: 1px solid #222; }
+    @media (max-width: 1200px) { #main-content { flex-direction: column; gap: 2rem; } #map, #timeline { width: 100%; min-width: unset; max-width: unset; } #map { height: 45vh; } #timeline { max-height: 45vh; } }
+    @media (max-width: 700px) { #main-content { padding: 0.5rem; } #map { height: 35vh; } #timeline { max-height: 35vh; font-size: 0.96rem; } }
+  </style>
+</head>
+<body>
+  <header class="py-3 px-4 mb-1 border-bottom" style="background:#222;">
+    <h1 class="fs-3 fw-bold text-success">IntelliFusion: Global News Intelligence Dashboard</h1>
+    <div class="text-secondary fs-6">Every Continent. Every Major News Source. Live & Sensitive.</div>
+  </header>
+  <div id="main-content">
+    <div>
+      <div class="mb-2">
+        <label class="form-label text-light">Imagery Layer</label>
+        <select id="satelliteLayer" class="form-select form-select-sm w-auto">
+          <option value="gibs_modis">NASA MODIS (Global)</option>
+          <option value="gibs_viirs">NASA VIIRS (Global)</option>
+          <option value="sentinel2">Sentinel-2 (Global)</option>
+          <option value="landsat8">Landsat-8 (Global)</option>
+          <option value="eosda">EOSDA NDVI (Global)</option>
+          <option value="skw_explore">SkyWatch EXPLORE (Aggregated)</option>
+          <option value="open_aerial">OpenAerialMap (Drone/Aerial)</option>
+        </select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label text-light">Continent</label>
+        <select id="continentSelect" class="form-select form-select-sm w-auto">
+          <option value="global">Global</option>
+          <option value="north_america">North America</option>
+          <option value="europe">Europe</option>
+          <option value="asia">Asia</option>
+          <option value="africa">Africa</option>
+          <option value="oceania">Oceania</option>
+          <option value="south_america">South America</option>
+        </select>
+      </div>
+      <div id="map"></div>
+    </div>
+    <div id="timeline">
+      <h2>Live News & Events</h2>
+      <div id="events-container"></div>
+    </div>
+  </div>
+  <div id="footer">
+    News: NewsAPI, GDELT, Event Registry, Bing, Google News, Reuters, BBC, Xinhua, ABC, AllAfrica, and all major state/public/independent sources | Linux Desktop Optimized
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    // === Map Setup ===
+    const map = L.map('map', { zoomControl: true, attributionControl: false }).setView([20, 0], 2);
+    let currentLayer = null;
+    const today = new Date().toISOString().slice(0,10);
+
+    // === Imagery Layers (Open APIs, Demo/Free Tiers) ===
+    const layers = {
+      gibs_modis: L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/' + today + '/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', {
+        maxZoom: 9, attribution: 'NASA GIBS MODIS'
+      }),
+      gibs_viirs: L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/' + today + '/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', {
+        maxZoom: 9, attribution: 'NASA GIBS VIIRS'
+      }),
+      sentinel2: L.tileLayer('https://services.sentinel-hub.com/ogc/wmts/public-demo/L1C_T29SNC_20210501T112121/WGS84/{z}/{y}/{x}.jpg', {
+        maxZoom: 12, attribution: 'Copernicus Sentinel-2 (Demo)'
+      }),
+      landsat8: L.tileLayer('https://services.sentinel-hub.com/ogc/wmts/public-demo/L8_T29SNC_20210501T112121/WGS84/{z}/{y}/{x}.jpg', {
+        maxZoom: 12, attribution: 'Landsat-8 (Demo)'
+      }),
+      eosda: L.tileLayer('https://api.eos.com/v1/tile/ndvi/{z}/{x}/{y}?api_key=DEMO_KEY', {
+        maxZoom: 12, attribution: 'EOSDA NDVI (Demo)'
+      }),
+      skw_explore: L.tileLayer('https://tiles.skywatch.com/EXAMPLE_TILE/{z}/{x}/{y}.jpg?api_key=DEMO_KEY', {
+        maxZoom: 12, attribution: 'SkyWatch EXPLORE (Demo)'
+      }),
+      open_aerial: L.tileLayer('https://tiles.openaerialmap.org/5d7b1f6c8b1e7e001a1e1e1e/0/0/0.png', {
+        maxZoom: 17, attribution: 'OpenAerialMap (Sample)'
+      })
+    };
+
+    function setLayer(layerKey) {
+      if (currentLayer) map.removeLayer(currentLayer);
+      currentLayer = layers[layerKey];
+      currentLayer.addTo(map);
+    }
+    setLayer('gibs_modis');
+    document.getElementById('satelliteLayer').addEventListener('change', e => setLayer(e.target.value));
+
+    // === News API Endpoints by Continent ===
+    const newsSources = {
+      global: [
+        { name: "NewsAPI", type: "api", url: "https://newsapi.org/v2/top-headlines?language=en&pageSize=5&apiKey=YOUR_NEWSAPI_KEY" },
+        { name: "GDELT", type: "api", url: "https://api.gdeltproject.org/api/v2/doc/doc?query=world&mode=artlist&format=json&maxrecords=5" },
+        { name: "EventRegistry", type: "api", url: "https://eventregistry.org/api/v1/article/getArticles?apiKey=YOUR_EVENT_REGISTRY_KEY&keyword=world&lang=eng&articlesPage=1&articlesCount=5&resultType=articles" }
+      ],
+      north_america: [
+        { name: "NY Times", type: "api", url: "https://api.nytimes.com/svc/topstories/v2/home.json?api-key=YOUR_NYTIMES_KEY" },
+        { name: "AP News", type: "rss", url: "https://apnews.com/rss" },
+        { name: "CBC", type: "rss", url: "https://www.cbc.ca/cmlink/rss-topstories" }
+      ],
+      europe: [
+        { name: "BBC", type: "rss", url: "https://feeds.bbci.co.uk/news/rss.xml" },
+        { name: "Guardian", type: "api", url: "https://content.guardianapis.com/search?api-key=YOUR_GUARDIAN_KEY" },
+        { name: "DW", type: "rss", url: "https://rss.dw.com/rdf/rss-en-all" }
+      ],
+      asia: [
+        { name: "Xinhua", type: "rss", url: "http://www.xinhuanet.com/english/rss/worldrss.xml" },
+        { name: "Times of India", type: "rss", url: "https://timesofindia.indiatimes.com/rss.cms" },
+        { name: "NHK", type: "rss", url: "https://www3.nhk.or.jp/rss/news/cat0.xml" }
+      ],
+      africa: [
+        { name: "AllAfrica", type: "rss", url: "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf" },
+        { name: "News24", type: "rss", url: "https://feeds.news24.com/articles/news24/TopStories/rss" }
+      ],
+      oceania: [
+        { name: "ABC Australia", type: "rss", url: "https://www.abc.net.au/news/feed/51120/rss.xml" },
+        { name: "NZ Herald", type: "rss", url: "https://rss.nzherald.co.nz/rss/xml/worldnews_206.rss" }
+      ],
+      south_america: [
+        { name: "Folha de S.Paulo", type: "rss", url: "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml" },
+        { name: "Clarin", type: "rss", url: "https://www.clarin.com/rss/lo-ultimo/" }
+      ]
+    };
+
+    // === News Fetchers ===
+    async function fetchNewsAPI(url) {
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.articles) {
+          return data.articles.map(a => ({
+            id: a.url,
+            type: "NewsAPI",
+            timestamp: a.publishedAt,
+            content: a.title,
+            url: a.url,
+            signal: classifyCriticality(a.title + " " + (a.description || ""))
+          }));
+        }
+        if (data.results) { // NYT
+          return data.results.map(a => ({
+            id: a.url,
+            type: "NYTimes",
+            timestamp: a.published_date,
+            content: a.title,
+            url: a.url,
+            signal: classifyCriticality(a.title + " " + (a.abstract || ""))
+          }));
+        }
+        if (data.response && data.response.results) { // Guardian
+          return data.response.results.map(a => ({
+            id: a.webUrl,
+            type: "Guardian",
+            timestamp: a.webPublicationDate,
+            content: a.webTitle,
+            url: a.webUrl,
+            signal: classifyCriticality(a.webTitle)
+          }));
+        }
+        if (data.articles) { // EventRegistry
+          return data.articles.results.map(a => ({
+            id: a.uri,
+            type: "EventRegistry",
+            timestamp: a.date,
+            content: a.title,
+            url: a.url,
+            signal: classifyCriticality(a.title + " " + (a.body || ""))
+          }));
+        }
+        if (data.articles) { // GDELT
+          return data.articles.map(a => ({
+            id: a.url,
+            type: "GDELT",
+            timestamp: a.seendate,
+            content: a.title,
+            url: a.url,
+            signal: classifyCriticality(a.title)
+          }));
+        }
+        return [];
+      } catch (e) { return []; }
+    }
+
+    async function fetchRSS(url, type) {
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, "text/xml");
+        const items = Array.from(xml.querySelectorAll("item")).slice(0, 5);
+        return items.map(item => ({
+          id: item.querySelector("link") ? item.querySelector("link").textContent : item.querySelector("guid").textContent,
+          type: type,
+          timestamp: item.querySelector("pubDate") ? item.querySelector("pubDate").textContent : "",
+          content: item.querySelector("title").textContent,
+          url: item.querySelector("link") ? item.querySelector("link").textContent : "",
+          signal: classifyCriticality(item.querySelector("title").textContent)
+        }));
+      } catch (e) { return []; }
+    }
+
+    // === Criticality Classifier (simple demo) ===
+    function classifyCriticality(text) {
+      text = text.toLowerCase();
+      if (/attack|explosion|war|flood|earthquake|cyclone|kill|dead|emergency|critical|danger|alert/.test(text)) return "danger";
+      if (/covid|storm|protest|strike|fire|evacuate|warning|crisis/.test(text)) return "normal";
+      return "good";
+    }
+
+    // === Render Events/News on Timeline ===
+    const eventsContainer = document.getElementById('events-container');
+    function renderEvents(events) {
+      eventsContainer.innerHTML = '';
+      events.forEach(event => {
+        const div = document.createElement('div');
+        div.classList.add('event');
+        div.innerHTML = `
+          <div class="type">${event.type}</div>
+          <div class="timestamp">${new Date(event.timestamp).toLocaleString()}</div>
+          <div class="content">${event.content}</div>
+          <div class="signal ${event.signal}">${event.signal.toUpperCase()}</div>
+          ${event.url ? `<a href="${event.url}" target="_blank" style="color:#4dcfff;">Read more</a>` : ""}
+        `;
+        eventsContainer.appendChild(div);
+      });
+    }
+
+    // === Main Live Update Loop ===
+    async function updateAll() {
+      const continent = document.getElementById('continentSelect').value || "global";
+      const sources = newsSources[continent] || newsSources.global;
+      let allEvents = [];
+      for (const src of sources) {
+        if (src.type === "api") {
+          const news = await fetchNewsAPI(src.url);
+          allEvents = allEvents.concat(news);
+        } else if (src.type === "rss") {
+          const news = await fetchRSS(src.url, src.name);
+          allEvents = allEvents.concat(news);
+        }
+      }
+      // Deduplicate and sort
+      const unique = {};
+      allEvents = allEvents.filter(ev => {
+        if (unique[ev.id]) return false;
+        unique[ev.id] = true;
+        return true;
+      });
+      allEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      renderEvents(allEvents);
+    }
+    updateAll();
+    document.getElementById('continentSelect').addEventListener('change', updateAll);
+    setInterval(updateAll, 60*1000); // Update every minute
+
+  </script>
+</body>
+</html>
