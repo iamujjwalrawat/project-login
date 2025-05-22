@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modern Cassandra Query Builder</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'SF Pro Display', 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(120deg, #f8fafc 0%, #e7eaf0 100%);
+      color: #1c1c1e;
+      min-height: 100vh;
+      padding: 2rem;
+      transition: background 0.3s;
+    }
+    [data-bs-theme="dark"] body {
+      background: linear-gradient(120deg, #18181c 0%, #23232e 100%);
+      color: #f3f3f3;
+    }
+    .theme-switch {
+      position: fixed;
+      top: 22px;
+      left: 32px;
+      z-index: 1000;
+    }
+    .container {
+      background: rgba(255,255,255,0.92);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+      padding: 2rem 2.2rem 2.2rem 2.2rem;
+      max-width: 900px;
+      margin: 0 auto;
+      transition: background 0.3s;
+    }
+    [data-bs-theme="dark"] .container {
+      background: rgba(34,36,42,0.97);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.20);
+    }
+    h1, h2 {
+      margin: 0 0 25px 0;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    label { font-weight: 600; font-size: 0.97rem; margin-bottom: 6px; display: block; }
+    form#dbForm { display: flex; flex-wrap: wrap; gap: 20px 30px; align-items: flex-start; justify-content: space-between;}
+    form#dbForm > div.form-field { flex: 1 1 calc(33% - 20px); min-width: 220px; display: flex; flex-direction: column; }
+    input, select, textarea {
+      width: 100%; padding: 10px 14px; border: none; border-radius: 8px;
+      font-size: 1rem; outline: none; background: #f4f4f8; color: #1c1c1e; resize: vertical;
+      transition: background 0.3s, color 0.3s;
+    }
+    [data-bs-theme="dark"] input, [data-bs-theme="dark"] select, [data-bs-theme="dark"] textarea {
+      background: #23232e; color: #fff;
+    }
+    input:focus, select:focus, textarea:focus {
+      box-shadow: 0 0 8px 2px #007aff22;
+      background: #fff;
+    }
+    [data-bs-theme="dark"] input:focus, [data-bs-theme="dark"] select:focus, [data-bs-theme="dark"] textarea:focus {
+      background: #23232e;
+    }
+    button {
+      background: #007aff;
+      border: none;
+      padding: 13px 26px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 14px #007aff33;
+      transition: background 0.3s;
+      letter-spacing: 1px;
+      margin-top: 10px;
+      max-width: 240px;
+      align-self: center;
+      display: block;
+    }
+    button:hover { background: #0051a8; }
+    .status-message { margin-top: 18px; padding: 15px; border-radius: 8px; font-weight: 700; text-align: center; font-size: 1rem; user-select: none; }
+    .status-success { background-color: #d1fae5; color: #007a3d; }
+    .status-failure { background-color: #fee2e2; color: #c0392b; }
+    .spinner { margin: 0 auto; border: 4px solid #e5e7eb; border-top: 4px solid #007aff; border-radius: 50%; width: 26px; height: 26px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
+    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+    #queryBuilder { margin-top: 10px; display: none; flex-direction: column; gap: 20px; background: #f4f4f8; padding: 25px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.10); font-size: 1rem;}
+    [data-bs-theme="dark"] #queryBuilder { background: #23232e; }
+    #queryBuilder h2 { text-align: center; margin-bottom: 15px; color: #007aff;}
+    .qb-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: center;}
+    .qb-row > div { flex: 1 1 180px; min-width: 140px; display: flex; flex-direction: column; position: relative;}
+    .qb-row label { margin-bottom: 5px; font-weight: 600; color: #007aff;}
+    .qb-row input, .qb-row select, .qb-row textarea { padding: 8px 12px; border-radius: 6px; border: none; outline: none; background: #f4f4f8; color: #1c1c1e; font-size: 1rem; resize: vertical;}
+    [data-bs-theme="dark"] .qb-row input, [data-bs-theme="dark"] .qb-row select, [data-bs-theme="dark"] .qb-row textarea { background: #23232e; color: #fff;}
+    .qb-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;}
+    .qb-buttons button { background: #007aff; color: #fff; border: none; padding: 11px 28px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background-color 0.3s ease; box-shadow: 0 4px 14px #007aff33; min-width: 140px; }
+    .qb-buttons button:hover { background: #0051a8; }
+    #queryOutput { font-family: monospace; white-space: pre-wrap; background: #f4f4f8; margin-top: 15px; padding: 15px; border-radius: 10px; color: #007aff; font-size: 1rem; min-height: 100px; max-height: 220px; overflow-y: auto; resize: vertical;}
+    [data-bs-theme="dark"] #queryOutput { background: #23232e; color: #fff;}
+    #queryModeToggle { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;}
+    #queryModeToggle button { min-width: 140px;}
+    #customQueryContainer { display: none; flex-direction: column;}
+    #customQuery { min-height: 120px; color: #1c1c1e; font-family: monospace; font-size: 1rem; background: #f4f4f8; border-radius: 8px; border: none; padding: 12px; outline: none; resize: vertical;}
+    [data-bs-theme="dark"] #customQuery { color: #fff; background: #23232e;}
+    .sql-table-section { margin-top: 1.7rem;}
+    .table-dark th, .table-dark td { color: #fff; background: #23232e;}
+    .table-dark thead th { background: #007aff; color: #fff;}
+    .cassandra-port { font-size:1.1rem;color:#007aff;font-weight:500; }
+    .form-switch .form-check-input { background-color: #007aff; border-color: #007aff;}
+    .form-switch .form-check-input:checked { background-color: #fff; border-color: #fff;}
+    .form-switch .form-check-label { color: #222;}
+    [data-bs-theme="dark"] .form-switch .form-check-label { color: #fff;}
+    @media (max-width: 991.98px) {
+      .container { padding: 1rem;}
+      .qb-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Theme switch -->
+  <div class="theme-switch">
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="modeSwitch">
+      <label class="form-check-label" for="modeSwitch"><i class="bi bi-moon-stars"></i> Dark Mode</label>
+    </div>
+  </div>
+  <div class="container">
+    <h1>Modern Cassandra Query Builder</h1>
+    <form id="dbForm" autocomplete="off" novalidate spellcheck="false" aria-label="Database Connection Form">
+      <div class="form-field">
+        <label for="dbType">Database Type:</label>
+        <select id="dbType" name="dbType" onchange="setDefaultPort()" required aria-required="true">
+          <option value="" disabled selected>--Select--</option>
+          <option value="Cassandra">Apache Cassandra</option>
+          <option value="MySQL">MySQL</option>
+          <option value="PostgreSQL">PostgreSQL</option>
+          <option value="Oracle">Oracle</option>
+          <option value="SQLServer">SQL Server</option>
+          <option value="MongoDB">MongoDB</option>
+          <option value="SQLite">SQLite</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="port">Port:</label>
+        <input type="number" id="port" name="port" placeholder="Port will autofill based on DB" required aria-required="true"
+          autocomplete="off" inputmode="numeric" min="1" max="65535" />
+      </div>
+      <div class="form-field">
+        <label for="host">Host:</label>
+        <input type="text" id="host" name="host" value="localhost" required aria-required="true" autocomplete="hostname" spellcheck="false" />
+      </div>
+      <div class="form-field">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required aria-required="true" autocomplete="username" spellcheck="false" />
+      </div>
+      <div class="form-field">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required aria-required="true" autocomplete="current-password" />
+      </div>
+      <div class="form-field">
+        <label for="dbname">Database Name:</label>
+        <input type="text" id="dbname" name="dbname" required aria-required="true" autocomplete="off" spellcheck="false" />
+      </div>
+      <button type="button" id="connectBtn" onclick="connectDB()">Connect</button>
+    </form>
+    <div id="statusMessage" class="status-message" aria-live="assertive" role="alert" style="display:none;"></div>
+    <div class="text-center mt-2 cassandra-port" id="cassPortDisplay" style="display:none;">
+      <i class="bi bi-lightning-charge-fill"></i> Cassandra Port: <span id="cassPort">9042</span>
+    </div>
+    <!-- Query Builder section -->
+    <div id="queryBuilder" aria-label="Query Builder UI">
+      <h2>Query Builder</h2>
+      <div id="queryModeToggle" role="radiogroup" aria-label="Query mode selection">
+        <button type="button" id="builderModeBtn" aria-pressed="true" onclick="toggleQueryMode('builder')">Visual Builder</button>
+        <button type="button" id="customModeBtn" aria-pressed="false" onclick="toggleQueryMode('custom')">Custom SQL</button>
+      </div>
+      <!-- Visual Query Builder -->
+      <form id="queryForm" autocomplete="off" novalidate spellcheck="false" aria-label="Visual query builder form" style="display:flex; flex-direction:column; gap: 15px;">
+        <div class="qb-row">
+          <div>
+            <label for="tableName">Table Name</label>
+            <input type="text" id="tableName" aria-describedby="tableHelp" placeholder="e.g. users" required aria-required="true" autocomplete="off" spellcheck="false" />
+          </div>
+          <div>
+            <label for="columns">Select Columns</label>
+            <select id="columns" multiple size="5" aria-describedby="columnHelp" aria-label="Select one or more columns"></select>
+          </div>
+        </div>
+        <div class="qb-row" style="align-items: flex-end;">
+          <div>
+            <label for="whereColumn">Where Column</label>
+            <select id="whereColumn" aria-label="Select column for where clause"></select>
+          </div>
+          <div>
+            <label for="operator">Operator</label>
+            <select id="operator" aria-label="Select operator for where clause">
+              <option value="=">=</option>
+              <option value="!=">!=</option>
+              <option value=">">&gt;</option>
+              <option value=">=">&gt;=</option>
+              <option value="<">&lt;</option>
+              <option value="<=">&lt;=</option>
+              <option value="LIKE">LIKE</option>
+            </select>
+          </div>
+          <div>
+            <label for="filterType">Filter Type</label>
+            <select id="filterType" aria-label="Select filter input type">
+              <option value="text" selected>Text</option>
+              <option value="date">Date</option>
+              <option value="number">Number</option>
+            </select>
+          </div>
+          <div>
+            <label for="whereValue">Value</label>
+            <input type="text" id="whereValue" aria-describedby="whereValueHelp" placeholder="Filter value" autocomplete="off" spellcheck="false" />
+            <input type="date" id="whereValueDate" style="display:none;" aria-describedby="whereValueHelp" />
+            <input type="number" id="whereValueNumber" style="display:none;" aria-describedby="whereValueHelp" />
+          </div>
+        </div>
+        <div class="qb-buttons">
+          <button type="button" onclick="buildQuery()">Build Query</button>
+          <button type="button" onclick="clearQuery()">Clear</button>
+        </div>
+      </form>
+      <!-- Custom Query textarea -->
+      <div id="customQueryContainer">
+        <label for="customQuery" style="font-weight:600; margin-bottom:6px; display:block; color:#007aff;">Enter your custom SQL query</label>
+        <textarea id="customQuery" aria-label="Custom SQL query input" placeholder="Write your SQL query here..."></textarea>
+        <div class="qb-buttons" style="justify-content:center; margin-top: 10px;">
+          <button type="button" onclick="runCustomQuery()">Run Custom Query</button>
+          <button type="button" onclick="clearCustomQuery()">Clear</button>
+        </div>
+      </div>
+      <pre id="queryOutput" aria-live="polite" aria-label="Generated SQL Query or Custom Query Output"></pre>
+      <div class="sql-table-section" id="sqlTableSection"></div>
+    </div>
+  </div>
+  <script>
+    // THEME SWITCH
+    const modeSwitch = document.getElementById('modeSwitch');
+    function setTheme(mode) {
+      document.documentElement.setAttribute('data-bs-theme', mode);
+      localStorage.setItem('bs-theme', mode);
+      modeSwitch.checked = mode === 'dark';
+      document.querySelector('.form-check-label').innerHTML = mode === 'dark'
+        ? '<i class="bi bi-sun"></i> Light Mode'
+        : '<i class="bi bi-moon-stars"></i> Dark Mode';
+    }
+    modeSwitch.addEventListener('change', () => setTheme(modeSwitch.checked ? 'dark' : 'light'));
+    (() => {
+      const saved = localStorage.getItem('bs-theme');
+      setTheme(saved === 'dark' ? 'dark' : 'light');
+    })();
+
+    // AUTO PORT FOR CASSANDRA
+    const defaultPorts = {
+      "Cassandra": 9042,
+      "MySQL": 3306,
+      "PostgreSQL": 5432,
+      "Oracle": 1521,
+      "SQLServer": 1433,
+      "MongoDB": 27017,
+      "SQLite": "N/A"
+    };
+    document.getElementById("dbType").addEventListener('change', function() {
+      const dbType = this.value;
+      const portField = document.getElementById("port");
+      if (defaultPorts[dbType] !== undefined) {
+        portField.value = defaultPorts[dbType];
+        portField.disabled = (dbType === "SQLite");
+        document.getElementById("cassPortDisplay").style.display = (dbType === "Cassandra") ? "block" : "none";
+      } else {
+        portField.value = '';
+        portField.disabled = false;
+        document.getElementById("cassPortDisplay").style.display = "none";
+      }
+    });
+
+    // CONNECTION SIMULATION
+    function connectDB() {
+      clearMessage();
+      const dbType = document.getElementById("dbType").value;
+      const port = document.getElementById("port").value.trim();
+      const host = document.getElementById("host").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const dbname = document.getElementById("dbname").value.trim();
+      if (!dbType) { showMessage('Please select a database type.', false); return; }
+      if (dbType !== 'SQLite' && (!host || !port || !username || !password || !dbname)) {
+        showMessage('Please fill all fields.', false); return;
+      } else if (dbType === 'SQLite' && !dbname) {
+        showMessage('Please provide the database file name for SQLite.', false); return;
+      }
+      const statusMessage = document.getElementById("statusMessage");
+      statusMessage.innerHTML = '<span class="spinner" aria-hidden="true"></span> Testing connection...';
+      statusMessage.style.display = 'block';
+      const connectBtn = document.getElementById("connectBtn");
+      connectBtn.disabled = true;
+      setTimeout(() => {
+        const success = Math.random() > 0.15;
+        if (success) {
+          showMessage('Connection Successful! 🎉', true);
+          showQueryBuilder();
+          autoPopulateColumns();
+        } else {
+          showMessage('Connection Failed. Please check your details and try again.', false);
+          connectBtn.disabled = false;
+        }
+      }, 1200);
+    }
+    function showMessage(message, isSuccess) {
+      const statusMessage = document.getElementById("statusMessage");
+      statusMessage.textContent = message;
+      statusMessage.className = 'status-message ' + (isSuccess ? 'status-success' : 'status-failure');
+      statusMessage.style.display = 'block';
+    }
+    function clearMessage() {
+      const statusMessage = document.getElementById("statusMessage");
+      statusMessage.style.display = 'none';
+      statusMessage.textContent = '';
+      statusMessage.className = 'status-message';
+    }
+    function showQueryBuilder() {
+      document.getElementById("dbForm").style.display = "none";
+      document.getElementById("connectBtn").disabled = false;
+      document.getElementById("queryBuilder").style.display = "flex";
+      clearQuery();
+      clearCustomQuery();
+      clearMessage();
+      toggleQueryMode('builder', false);
+    }
+    // Query Builder and Custom Query Mode toggling
+    function toggleQueryMode(mode, focus=true) {
+      const builderForm = document.getElementById('queryForm');
+      const customContainer = document.getElementById('customQueryContainer');
+      const builderBtn = document.getElementById('builderModeBtn');
+      const customBtn = document.getElementById('customModeBtn');
+      if (mode === 'builder') {
+        builderForm.style.display = 'flex';
+        customContainer.style.display = 'none';
+        builderBtn.setAttribute('aria-pressed', 'true');
+        customBtn.setAttribute('aria-pressed', 'false');
+        if(focus) document.getElementById('tableName').focus();
+      } else if (mode === 'custom') {
+        builderForm.style.display = 'none';
+        customContainer.style.display = 'flex';
+        builderBtn.setAttribute('aria-pressed', 'false');
+        customBtn.setAttribute('aria-pressed', 'true');
+        if(focus) document.getElementById('customQuery').focus();
+      }
+      clearMessage();
+      clearQuery();
+      clearCustomQuery();
+      document.getElementById('queryOutput').textContent = '';
+      document.getElementById('sqlTableSection').innerHTML = '';
+    }
+    // Auto populate columns if user enters table name (simulate)
+    function autoPopulateColumns() {
+      const tableNameInput = document.getElementById('tableName');
+      const columnsSelect = document.getElementById('columns');
+      const whereColumnSelect = document.getElementById('whereColumn');
+      function populateColumns(columns) {
+        columnsSelect.innerHTML = '';
+        whereColumnSelect.innerHTML = '<option value="">-- Select Column --</option>';
+        columns.forEach(col => {
+          let option = document.createElement('option');
+          option.value = col;
+          option.textContent = col;
+          columnsSelect.appendChild(option);
+          let whereOption = document.createElement('option');
+          whereOption.value = col;
+          whereOption.textContent = col;
+          whereColumnSelect.appendChild(whereOption);
+        });
+      }
+      tableNameInput.addEventListener('input', () => {
+        const val = tableNameInput.value.trim().toLowerCase();
+        let cols = [];
+        if(val === 'users'){
+          cols = ['id', 'username', 'email', 'created_at', 'status'];
+        } else if(val === 'orders'){
+          cols = ['order_id', 'user_id', 'product', 'quantity', 'price', 'order_date'];
+        } else if(val === 'products'){
+          cols = ['product_id', 'name', 'category', 'price', 'stock', 'added_date'];
+        } else {
+          cols = ['id', 'column1', 'column2', 'column3'];
+        }
+        populateColumns(cols);
+      });
+    }
+    // Handle filter type change to toggle visible input field
+    document.getElementById('filterType').addEventListener('change', e => {
+      const val = e.target.value;
+      document.getElementById('whereValue').style.display = val === 'text' ? 'block' : 'none';
+      document.getElementById('whereValueDate').style.display = val === 'date' ? 'block' : 'none';
+      document.getElementById('whereValueNumber').style.display = val === 'number' ? 'block' : 'none';
+    });
+    // Build SQL query visual builder mode
+    function buildQuery() {
+      clearMessage();
+      const tableName = document.getElementById('tableName').value.trim();
+      const columnsSelected = Array.from(document.getElementById('columns').selectedOptions).map(o=>o.value);
+      const whereColumn = document.getElementById('whereColumn').value;
+      const operator = document.getElementById('operator').value;
+      const filterType = document.getElementById('filterType').value;
+      let whereValue = '';
+      if(filterType === 'text'){
+        whereValue = document.getElementById('whereValue').value.trim();
+      } else if(filterType === 'date'){
+        whereValue = document.getElementById('whereValueDate').value.trim();
+      } else if(filterType === 'number'){
+        whereValue = document.getElementById('whereValueNumber').value.trim();
+      }
+      if(!tableName){
+        showMessage('Please enter a table name to build the query.', false);
+        return;
+      }
+      let selectCols = columnsSelected.length > 0 ? columnsSelected.join(', ') : '*';
+      let query = `SELECT ${selectCols} FROM ${tableName}`;
+      if(whereColumn && whereValue){
+        const escapedValue = whereValue.replace(/'/g, "''");
+        const needsQuotes = filterType === 'text' || filterType === 'date' || operator.toUpperCase() === 'LIKE';
+        query += ` WHERE ${whereColumn} ${operator} ${needsQuotes ? `'${escapedValue}'` : whereValue}`;
+      }
+      query += ';';
+      document.getElementById('queryOutput').textContent = query;
+      showMessage('Query built successfully.', true);
+      simulateTable(query);
+    }
+    function clearQuery() {
+      document.getElementById('tableName').value = '';
+      const colsSelect = document.getElementById('columns');
+      for(let i=0; i < colsSelect.options.length; i++) {
+        colsSelect.options[i].selected = false;
+      }
+      document.getElementById('whereColumn').value = '';
+      document.getElementById('operator').value = '=';
+      document.getElementById('filterType').value = 'text';
+      document.getElementById('whereValue').value = '';
+      document.getElementById('whereValue').style.display = 'block';
+      document.getElementById('whereValueDate').value = '';
+      document.getElementById('whereValueDate').style.display = 'none';
+      document.getElementById('whereValueNumber').value = '';
+      document.getElementById('whereValueNumber').style.display = 'none';
+      document.getElementById('queryOutput').textContent = '';
+      document.getElementById('sqlTableSection').innerHTML = '';
+      clearMessage();
+    }
+    // Run custom SQL query mode
+    function runCustomQuery() {
+      clearMessage();
+      const customQuery = document.getElementById('customQuery').value.trim();
+      if(!customQuery){
+        showMessage('Please enter a custom SQL query to run.', false);
+        return;
+      }
+      document.getElementById('queryOutput').textContent = customQuery;
+      simulateTable(customQuery);
+    }
+    function clearCustomQuery() {
+      document.getElementById('customQuery').value = '';
+      document.getElementById('queryOutput').textContent = '';
+      document.getElementById('sqlTableSection').innerHTML = '';
+      clearMessage();
+    }
+    // Simulate Cassandra table result
+    function simulateTable(query) {
+      // Only SELECT supported
+      if (!query.toLowerCase().startsWith('select')) {
+        document.getElementById('sqlTableSection').innerHTML = `<div class="alert alert-danger">Only SELECT queries are supported for table output.</div>`;
+        return;
+      }
+      // Demo columns
+      const sampleData = [
+        { id: 1, name: "Alice", age: 30, city: "New York" },
+        { id: 2, name: "Bob", age: 24, city: "Los Angeles" },
+        { id: 3, name: "Charlie", age: 28, city: "Chicago" }
+      ];
+      let columns = Object.keys(sampleData[0]);
+      let tableHTML = '<div class="table-responsive"><table class="table table-dark table-striped table-bordered align-middle">';
+      tableHTML += '<thead><tr>';
+      columns.forEach(column => { tableHTML += `<th>${column}</th>`; });
+      tableHTML += '</tr></thead><tbody>';
+      sampleData.forEach(row => {
+        tableHTML += '<tr>';
+        columns.forEach(column => { tableHTML += `<td>${row[column]}</td>`; });
+        tableHTML += '</tr>';
+      });
+      tableHTML += '</tbody></table></div>';
+      document.getElementById('sqlTableSection').innerHTML = tableHTML;
+    }
+  </script>
+</body>
+</html>

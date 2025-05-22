@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modern Cassandra Table Filters & Live Monitoring</title>
+  <!-- Bootstrap 5 CSS (minified) -->
+  <style>
+  /* Bootstrap 5.3.0 (minified, only essentials for layout, grid, forms, buttons, cards, tables, utilities, etc.) */
+  /* ... [For brevity, insert the minified Bootstrap 5 CSS here, or use the file you have offline] ... */
+  @import url('https://fonts.googleapis.com/css?family=Segoe+UI:400,600&display=swap');
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bs-body-bg,#f9f9fb); color: var(--bs-body-color,#1c1c1e); min-height: 100vh; padding: 1.5rem; }
+  .vrli-container { max-width: 1200px; margin: 0 auto; background: var(--bs-body-bg,#fff); border-radius: 12px; box-shadow: 0 4px 6px rgb(0 0 0 / 0.10), 0 1px 3px rgb(0 0 0 / 0.06); padding: 1.5rem; }
+  .monitor-row { margin-bottom: 1.5rem; }
+  .below-monitor-row { display: flex; flex-wrap: wrap; gap: 1.2rem; margin: 1.2rem 0 1.2rem 0; align-items: flex-end; justify-content: space-between;}
+  .count-multiselect-group { position: relative; min-width: 300px; max-width: 350px; }
+  .count-multiselect-btn { width: 100%; text-align: left; border-radius: 10px; border: 1.8px solid #b0b0b5; background: var(--bs-body-bg,#fff); min-height: 44px; display: flex; align-items: center; gap: 8px; font-size: 1.05rem; padding: 5px 10px; box-shadow: inset 0 1px 4px rgb(0 0 0 / 0.06);}
+  .count-multiselect-btn .tag { background: #007aff22; color: #007aff; border-radius: 16px; padding: 4px 12px; font-weight: 600; cursor: default; font-size: 1rem; display: flex; align-items: center; margin-right: 4px;}
+  .count-multiselect-btn .tag .remove-tag { margin-left: 10px; font-weight: 700; cursor: pointer; font-size: 1.3rem; line-height: 1; color: #ff3b30; }
+  .count-multiselect-btn .placeholder { color: #888; }
+  .count-multiselect-btn .down-arrow { margin-left: auto; color: #007aff; }
+  .count-multiselect-dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20; background: var(--bs-body-bg,#fff); border: 1.5px solid #b0b0b5; border-radius: 0 0 10px 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); max-height: 260px; overflow-y: auto; }
+  .count-multiselect-dropdown .px-2 { padding-top: 8px; padding-bottom: 8px;}
+  .count-multiselect-dropdown .form-check { margin-bottom: 0.5rem;}
+  .count-multiselect-dropdown .form-check:last-child { margin-bottom: 0;}
+  .count-multiselect-dropdown .form-control { margin-bottom: 0.5rem;}
+  .calendar-group { display: flex; gap: 0.7rem; align-items: flex-end; }
+  .calendar-group label { font-weight: 600; font-size: 1rem; margin-bottom: 2px; color: #007aff;}
+  .calendar-group input[type="date"] { border-radius: 8px; border: 1.5px solid #b0b0b5; padding: 7px 10px; font-size: 1rem; background: var(--bs-body-bg,#fff);}
+  .calendar-group input[type="date"]:focus { border-color: #007aff; outline: none; }
+  .filters-row { display: flex; gap: 1rem; align-items: stretch; margin-bottom: 1rem; border: 1.5px solid #d1d1d6; border-radius: 12px; background: var(--bs-tertiary-bg,#f4f4f8); padding: 0.6rem 1rem; box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.04);}
+  .filters-row > div { flex: 1 1 0; display: flex; flex-direction: column; justify-content: center; position: relative;}
+  .tag-multiselect { background: var(--bs-body-bg,#fff); border-radius: 10px; border: 1.8px solid #b0b0b5; min-height: 44px; display: flex; align-items: center; flex-wrap: wrap; padding: 5px 10px; font-size: 1.05rem; gap: 8px; box-shadow: inset 0 1px 4px rgb(0 0 0 / 0.06); cursor: text; }
+  .tag-multiselect .tag { background: #007aff22; color: #007aff; border-radius: 16px; padding: 4px 12px; font-weight: 600; cursor: default; font-size: 1rem; display: flex; align-items: center;}
+  .tag-multiselect .tag .remove-tag { margin-left: 10px; font-weight: 700; cursor: pointer; font-size: 1.3rem; line-height: 1; color: #ff3b30;}
+  .tag-multiselect input { border: none; flex: 1; font-size: 1.05rem; min-width: 90px; padding: 6px 4px; background: transparent; height: 34px; font-weight: 600; outline: none;}
+  .tag-multiselect-dropdown { position: absolute; left: 0; right: 0; top: 100%; z-index: 10; background: var(--bs-body-bg,#fff); border: 1.5px solid #b0b0b5; border-radius: 0 0 10px 10px; max-height: 180px; overflow-y: auto; box-shadow: 0 6px 18px rgba(0,0,0,0.08);}
+  .tag-multiselect-dropdown .dropdown-item { padding: 8px 16px; cursor: pointer;}
+  .tag-multiselect-dropdown .dropdown-item.active, .tag-multiselect-dropdown .dropdown-item:hover { background: #007aff22; color: #007aff;}
+  .custom-query-box { margin-top: 2rem; }
+  .custom-query-box textarea { font-family: 'Fira Mono', 'Menlo', 'Monaco', monospace; font-size: 1rem; }
+  .sql-table-section { margin-top: 2rem; }
+  .editable-cell { min-width: 80px; }
+  .editable-cell:focus { outline: 2px solid #007aff; }
+  @media (max-width: 991.98px) {
+    .below-monitor-row { flex-direction: column; align-items: stretch; gap: 1rem;}
+    .calendar-group { width: 100%; }
+    .count-multiselect-group { width: 100%; }
+  }
+  @media (max-width: 767.98px) {
+    .filters-row { flex-wrap: wrap; }
+    .filters-row > div { flex: 1 1 100%; }
+    .vrli-container, .cassandra-monitor-card { max-width: 100%; }
+  }
+  /* Bootstrap Icons (minified SVG as font) - only caret and moon/sun icons used */
+  @font-face{font-family:"bootstrap-icons";src:url('data:font/woff2;base64,d09GMgABAAAAAA...') format('woff2');font-weight:normal;font-style:normal}
+  [class^="bi-"],[class*=" bi-"]{display:inline-block;font-family:"bootstrap-icons"!important;font-style:normal;font-weight:400;font-variant:normal;text-transform:none;line-height:1;vertical-align:-.125em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  .bi-caret-down-fill:before{content:"\f229";}
+  .bi-moon-stars:before{content:"\f5c3";}
+  .bi-sun:before{content:"\f5d4";}
+  .bi-table:before{content:"\f5d7";}
+  .bi-play:before{content:"\f4b5";}
+  .bi-x:before{content:"\f62a";}
+  </style>
+</head>
+<body>
+  <!-- Theme Switch -->
+  <div class="top-bar mb-0" style="margin-bottom:0;">
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="modeSwitch">
+      <label class="form-check-label" for="modeSwitch"><i class="bi bi-moon-stars"></i> Dark Mode</label>
+    </div>
+  </div>
+  <!-- Live Monitoring -->
+  <div class="container cassandra-monitor-card monitor-row" id="cassandraMonitorPanel">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <span class="me-2"><svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" stroke="white" stroke-width="2" fill="none"/><circle cx="10" cy="10" r="6" fill="white" /></svg></span>
+        <span class="fw-bold">Cassandra Cluster Live Monitoring</span>
+        <span class="ms-auto small" id="monitorLastUpdate"></span>
+      </div>
+      <div class="card-body p-2" id="cassandraNodesStatus">
+        <div class="text-center text-muted">Loading node status...</div>
+      </div>
+    </div>
+  </div>
+  <!-- Below monitor: Count Fields + Date Pickers -->
+  <div class="below-monitor-row">
+    <div class="count-multiselect-group">
+      <label for="countMultiSelectBtn" class="fw-semibold mb-1">Count Fields</label>
+      <button type="button" class="count-multiselect-btn" id="countMultiSelectBtn">
+        <span id="countSelectedTags"></span>
+        <span class="placeholder" id="countPlaceholder">Select count fields...</span>
+        <i class="bi bi-caret-down-fill down-arrow"></i>
+      </button>
+      <div class="count-multiselect-dropdown shadow-sm" id="countDropdown" style="display:none;">
+        <div class="px-2 pt-2">
+          <input type="text" class="form-control form-control-sm" id="countSearch" placeholder="Search fields...">
+        </div>
+        <div id="countOptions" class="px-2 pb-2"></div>
+      </div>
+    </div>
+    <div class="calendar-group ms-auto">
+      <div>
+        <label for="fromDate">From</label>
+        <input type="date" id="fromDate" class="form-control" />
+      </div>
+      <div>
+        <label for="toDate">To</label>
+        <input type="date" id="toDate" class="form-control" />
+      </div>
+    </div>
+  </div>
+  <div class="vrli-container">
+    <!-- Filter row with modern multi-select in first box -->
+    <div class="filters-row" role="region" aria-label="Filters row">
+      <div style="position:relative;">
+        <div class="tag-multiselect" id="fieldMultiSelect" tabindex="0" aria-label="Select fields">
+          <input type="text" placeholder="Select fields..." id="fieldInput" autocomplete="off" />
+        </div>
+        <div class="tag-multiselect-dropdown" id="fieldDropdown" style="display:none;"></div>
+      </div>
+      <div>
+        <div class="input-group">
+          <select id="functionSelect" class="form-select">
+            <option value="add">Add</option>
+            <option value="sum">Sum</option>
+            <option value="count">Count</option>
+            <option value="avg">Average</option>
+            <option value="min">Min</option>
+            <option value="max">Max</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="tag-multiselect" tabindex="0" id="termsTagContainer">
+          <input type="text" id="termsInput" placeholder="Add terms (tab/enter to add)" autocomplete="off" />
+        </div>
+      </div>
+    </div>
+    <!-- Add/Clear buttons -->
+    <div class="filter-actions mb-3">
+      <button type="button" class="add-filter btn btn-primary" id="addFilterBtn">Add Filter</button>
+      <button type="button" class="clear-filters btn btn-danger" id="clearFiltersBtn">Clear All</button>
+    </div>
+    <!-- Active filters display -->
+    <section id="activeFiltersSection" style="margin-top:1rem;"></section>
+    <!-- Query Output -->
+    <div class="cassandra-query-section" id="querySection"></div>
+    <!-- Custom CQL/SQL Query Box -->
+    <div class="custom-query-box">
+      <label for="customQuery" class="form-label fw-semibold">Custom CQL/SQL Query</label>
+      <textarea id="customQuery" class="form-control" rows="3" placeholder="Write your CQL/SQL query here..."></textarea>
+      <div class="d-flex justify-content-end gap-2 mt-2">
+        <button class="btn btn-secondary" id="runCustomQueryBtn"><i class="bi bi-play"></i> Run Query</button>
+        <button class="btn btn-outline-secondary" id="clearCustomQueryBtn"><i class="bi bi-x"></i> Clear</button>
+      </div>
+    </div>
+    <!-- SQL Table Output -->
+    <div class="sql-table-section" id="sqlTableSection"></div>
+  </div>
+  <script>
+    // ---- Theme Switch ----
+    const modeSwitch = document.getElementById('modeSwitch');
+    function setTheme(mode) {
+      document.documentElement.setAttribute('data-bs-theme', mode);
+      localStorage.setItem('bs-theme', mode);
+      modeSwitch.checked = mode === 'dark';
+      document.querySelector('.form-check-label').innerHTML = mode === 'dark'
+        ? '<i class="bi bi-sun"></i> Light Mode'
+        : '<i class="bi bi-moon-stars"></i> Dark Mode';
+    }
+    modeSwitch.addEventListener('change', () => setTheme(modeSwitch.checked ? 'dark' : 'light'));
+    (() => {
+      const saved = localStorage.getItem('bs-theme');
+      setTheme(saved === 'dark' ? 'dark' : 'light');
+    })();
+
+    // --- Live Cassandra Nodes Monitoring ---
+    async function fetchCassandraNodes() {
+      // Simulated data for offline; replace with real API in production
+      return [
+        { name: "10.0.1.11", status: "UP", datacenter: "DC1", rack: "Rack1", load: "12.3 GB", tokens: 256, uptime: "5d 3h", cpu: Math.floor(Math.random()*30)+20, ram: Math.floor(Math.random()*40)+40 },
+        { name: "10.0.1.12", status: "UP", datacenter: "DC1", rack: "Rack2", load: "11.8 GB", tokens: 256, uptime: "5d 2h", cpu: Math.floor(Math.random()*30)+20, ram: Math.floor(Math.random()*40)+40 },
+        { name: "10.0.1.13", status: "DOWN", datacenter: "DC2", rack: "Rack1", load: "N/A", tokens: 256, uptime: "N/A", cpu: 0, ram: 0 }
+      ];
+    }
+    function renderCassandraNodes(nodes) {
+      const statusColors = { UP: "success", DOWN: "danger" };
+      if (!nodes.length) return '<div class="text-danger">No nodes found.</div>';
+      return `<div class="row g-2">${nodes.map(node => `
+        <div class="col-md-4">
+          <div class="border rounded p-2 h-100" style="background:var(--bs-tertiary-bg,#f8fafc);">
+            <div class="d-flex align-items-center mb-1">
+              <span class="fw-bold me-2">${node.name}</span>
+              <span class="badge bg-${statusColors[node.status] || 'secondary'}">${node.status}</span>
+            </div>
+            <div class="small mb-1 text-muted">
+              DC: <span class="fw-semibold">${node.datacenter}</span> &nbsp;|&nbsp; Rack: <span class="fw-semibold">${node.rack}</span>
+            </div>
+            <div class="mb-1">
+              <span class="me-2">Load: <span class="fw-semibold">${node.load}</span></span>
+              <span class="me-2">Tokens: <span class="fw-semibold">${node.tokens}</span></span>
+            </div>
+            <div class="mb-2">
+              <span class="me-2">Uptime: <span class="fw-semibold">${node.uptime}</span></span>
+            </div>
+            <div class="mb-1">
+              <span class="small">CPU</span>
+              <div class="progress" style="height:6px;">
+                <div class="progress-bar bg-info" role="progressbar" style="width:${node.cpu}%" aria-valuenow="${node.cpu}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <span class="small">${node.cpu}%</span>
+            </div>
+            <div>
+              <span class="small">RAM</span>
+              <div class="progress" style="height:6px;">
+                <div class="progress-bar bg-warning" role="progressbar" style="width:${node.ram}%" aria-valuenow="${node.ram}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <span class="small">${node.ram}%</span>
+            </div>
+          </div>
+        </div>
+      `).join('')}</div>`;
+    }
+    async function updateCassandraMonitorPanel() {
+      const panel = document.getElementById('cassandraNodesStatus');
+      const lastUpdate = document.getElementById('monitorLastUpdate');
+      try {
+        const nodes = await fetchCassandraNodes();
+        panel.innerHTML = renderCassandraNodes(nodes);
+        lastUpdate.textContent = "Last updated: " + new Date().toLocaleTimeString();
+      } catch (e) {
+        panel.innerHTML = `<div class="text-danger">Error loading node status</div>`;
+        lastUpdate.textContent = "";
+      }
+    }
+    updateCassandraMonitorPanel();
+    setInterval(updateCassandraMonitorPanel, 5000);
+
+    // --- Count Multi-Select Dropdown (Add Column Style) ---
+    const COUNT_OPTIONS = [
+      { value: "count", label: "count" }, { value: "distinct", label: "distinct" }, { value: "sum", label: "sum" },
+      { value: "expiry_date", label: "expiry_date" }, { value: "entry_date", label: "entry_date" }
+    ];
+    let selectedCounts = [];
+    let countDropdownOpen = false;
+    const countMultiSelectBtn = document.getElementById('countMultiSelectBtn');
+    const countDropdown = document.getElementById('countDropdown');
+    const countOptionsDiv = document.getElementById('countOptions');
+    const countSelectedTags = document.getElementById('countSelectedTags');
+    const countPlaceholder = document.getElementById('countPlaceholder');
+    const countSearch = document.getElementById('countSearch');
+
+    function renderCountDropdownOptions(filter="") {
+      countOptionsDiv.innerHTML = "";
+      let filtered = COUNT_OPTIONS.filter(opt => opt.label.toLowerCase().includes(filter.toLowerCase()));
+      if (filtered.length === 0) {
+        countOptionsDiv.innerHTML = `<div class="text-muted small px-1 py-2">No fields found</div>`;
+        return;
+      }
+      filtered.forEach(opt => {
+        const checked = selectedCounts.includes(opt.value);
+        const id = "count-opt-" + opt.value;
+        const div = document.createElement('div');
+        div.className = "form-check";
+        div.innerHTML = `
+          <input class="form-check-input" type="checkbox" value="${opt.value}" id="${id}" ${checked ? "checked" : ""}>
+          <label class="form-check-label" for="${id}">${opt.label}</label>
+        `;
+        div.querySelector('input').addEventListener('change', function(e) {
+          if (e.target.checked) {
+            if (!selectedCounts.includes(opt.value)) selectedCounts.push(opt.value);
+          } else {
+            selectedCounts = selectedCounts.filter(v => v !== opt.value);
+          }
+          renderCountTags();
+        });
+        countOptionsDiv.appendChild(div);
+      });
+    }
+
+    function renderCountTags() {
+      countSelectedTags.innerHTML = "";
+      if (selectedCounts.length === 0) {
+        countPlaceholder.style.display = "";
+      } else {
+        countPlaceholder.style.display = "none";
+        selectedCounts.forEach(val => {
+          const opt = COUNT_OPTIONS.find(o => o.value === val);
+          const tag = document.createElement('span');
+          tag.className = 'tag';
+          tag.textContent = opt ? opt.label : val;
+          const closeBtn = document.createElement('span');
+          closeBtn.className = 'remove-tag';
+          closeBtn.innerHTML = '\u00d7';
+          closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            selectedCounts = selectedCounts.filter(f => f !== val);
+            renderCountTags();
+            renderCountDropdownOptions(countSearch.value);
+          };
+          tag.appendChild(closeBtn);
+          countSelectedTags.appendChild(tag);
+        });
+      }
+    }
+
+    countMultiSelectBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (countDropdownOpen) {
+        countDropdown.style.display = "none";
+        countDropdownOpen = false;
+      } else {
+        renderCountDropdownOptions("");
+        countDropdown.style.display = "block";
+        countDropdownOpen = true;
+        countSearch.value = "";
+        setTimeout(()=>countSearch.focus(), 100);
+      }
+    });
+
+    countSearch.addEventListener('input', function() {
+      renderCountDropdownOptions(countSearch.value);
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!countMultiSelectBtn.contains(e.target) && !countDropdown.contains(e.target)) {
+        countDropdown.style.display = "none";
+        countDropdownOpen = false;
+      }
+    });
+
+    // --- Modern Multi-Select Tag Input for Fields ---
+    const FIELD_OPTIONS = [
+      { value: "text", label: "Text" }, { value: "name", label: "Name" }, { value: "source", label: "Source" },
+      { value: "host", label: "Host" }, { value: "service", label: "Service" }, { value: "message", label: "Message" }
+    ];
+    let selectedFields = [];
+    const fieldMultiSelect = document.getElementById('fieldMultiSelect');
+    const fieldInput = document.getElementById('fieldInput');
+    const fieldDropdown = document.getElementById('fieldDropdown');
+    function renderFieldTags() {
+      fieldMultiSelect.querySelectorAll('.tag').forEach(tag => tag.remove());
+      selectedFields.forEach(val => {
+        const opt = FIELD_OPTIONS.find(o => o.value === val);
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = opt ? opt.label : val;
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'remove-tag';
+        closeBtn.innerHTML = '\u00d7';
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          selectedFields = selectedFields.filter(f => f !== val);
+          renderFieldTags(); updateDropdown();
+        };
+        tag.appendChild(closeBtn);
+        fieldMultiSelect.insertBefore(tag, fieldInput);
+      });
+    }
+    function updateDropdown() {
+      const filter = fieldInput.value.trim().toLowerCase();
+      const filtered = FIELD_OPTIONS.filter(
+        o => !selectedFields.includes(o.value) && o.label.toLowerCase().includes(filter)
+      );
+      if (filtered.length === 0) { fieldDropdown.style.display = 'none'; return; }
+      fieldDropdown.innerHTML = filtered.map((o,i) =>
+        `<div class="dropdown-item" data-value="${o.value}" tabindex="0">${o.label}</div>`
+      ).join('');
+      fieldDropdown.style.display = 'block';
+    }
+    function closeDropdown() { fieldDropdown.style.display = 'none'; }
+    fieldInput.addEventListener('focus', updateDropdown);
+    fieldInput.addEventListener('input', updateDropdown);
+    fieldInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace' && !fieldInput.value && selectedFields.length) {
+        selectedFields.pop(); renderFieldTags(); updateDropdown();
+      } else if (e.key === 'Enter' || e.key === 'Tab' || e.key === ',') {
+        e.preventDefault();
+        const filter = fieldInput.value.trim().toLowerCase();
+        const match = FIELD_OPTIONS.find(
+          o => !selectedFields.includes(o.value) && o.label.toLowerCase() === filter
+        );
+        if (match) {
+          selectedFields.push(match.value); renderFieldTags(); fieldInput.value = ''; updateDropdown();
+        } else if (fieldDropdown.firstChild) { fieldDropdown.firstChild.click(); }
+      } else if (e.key === 'ArrowDown') { e.preventDefault(); if (fieldDropdown.firstChild) fieldDropdown.firstChild.focus(); }
+    });
+    fieldDropdown.addEventListener('mousedown', function(e) {
+      if (e.target.classList.contains('dropdown-item')) {
+        const value = e.target.getAttribute('data-value');
+        if (!selectedFields.includes(value)) {
+          selectedFields.push(value); renderFieldTags(); fieldInput.value = ''; updateDropdown();
+        }
+      }
+    });
+    fieldDropdown.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (e.target.nextSibling) e.target.nextSibling.focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (e.target.previousSibling) e.target.previousSibling.focus(); else fieldInput.focus(); }
+      else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); e.target.click(); }
+    });
+    document.addEventListener('click', function(e) { if (!fieldMultiSelect.contains(e.target)) closeDropdown(); });
+    fieldMultiSelect.addEventListener('click', () => fieldInput.focus());
+
+    // --- Tag Input for Terms ---
+    const termsTagContainer = document.getElementById('termsTagContainer');
+    const termsInput = document.getElementById('termsInput');
+    let tags = [];
+    function renderTermTags() {
+      termsTagContainer.querySelectorAll('.tag').forEach(tag => tag.remove());
+      tags.forEach(term => {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = term;
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'remove-tag';
+        closeBtn.innerHTML = '\u00d7';
+        closeBtn.onclick = () => {
+          tags = tags.filter(t => t !== term); renderTermTags();
+        };
+        tag.appendChild(closeBtn);
+        termsTagContainer.insertBefore(tag, termsInput);
+      });
+    }
+    termsInput.addEventListener('keydown', function(e) {
+      if (['Enter','Tab',','].includes(e.key)) {
+        e.preventDefault();
+        const value = termsInput.value.trim();
+        if (value && !tags.includes(value)) {
+          tags.push(value); renderTermTags(); termsInput.value = '';
+        }
+      } else if (e.key === 'Backspace' && !termsInput.value && tags.length) {
+        tags.pop(); renderTermTags();
+      }
+    });
+    termsInput.addEventListener('blur', function() {
+      const value = termsInput.value.trim();
+      if (value && !tags.includes(value)) {
+        tags.push(value); renderTermTags(); termsInput.value = '';
+      }
+    });
+
+    // --- Filter logic ---
+    const addFilterBtn = document.getElementById("addFilterBtn");
+    const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+    const activeFiltersSection = document.getElementById("activeFiltersSection");
+    let filters = [];
+    function renderActiveFilters() {
+      activeFiltersSection.innerHTML = "";
+      filters.forEach((filter, idx) => {
+        const div = document.createElement("div");
+        div.className = "alert alert-secondary d-flex align-items-center justify-content-between mb-2";
+        div.innerHTML = `<span>
+          <strong>${filter.fields.map(f=>FIELD_OPTIONS.find(o=>o.value===f).label).join(", ")}</strong>
+          <em>${filter.func}</em>
+          [${filter.terms.join(", ")}]
+        </span>`;
+        const rmBtn = document.createElement("button");
+        rmBtn.className = "btn btn-sm btn-outline-danger ms-2";
+        rmBtn.textContent = "Remove";
+        rmBtn.onclick = () => {
+          filters.splice(idx, 1); renderActiveFilters(); updateQuerySection();
+        };
+        div.appendChild(rmBtn);
+        activeFiltersSection.appendChild(div);
+      });
+    }
+    addFilterBtn.onclick = () => {
+      if (!tags.length || !selectedFields.length) return;
+      filters.push({
+        fields: [...selectedFields],
+        func: document.getElementById("functionSelect").value,
+        terms: [...tags]
+      });
+      tags = []; selectedFields = [];
+      renderTermTags(); renderFieldTags(); updateDropdown();
+      renderActiveFilters(); updateQuerySection();
+    };
+    clearFiltersBtn.onclick = () => {
+      filters = []; tags = []; selectedFields = [];
+      renderTermTags(); renderFieldTags(); updateDropdown();
+      renderActiveFilters(); updateQuerySection();
+    };
+
+    // --- Query logic ---
+    function generateDynamicQuery() {
+      let query = "SELECT * FROM logs WHERE 1=1";
+      let params = {};
+      filters.forEach(f => {
+        if (f.terms.length > 0 && f.fields.length > 0) {
+          const fieldConditions = f.fields.map(field =>
+            `${field} IN (${f.terms.map((_,i)=>`%(term_${field}_${i})s`).join(", ")})`
+          ).join(" OR ");
+          query += ` AND (${fieldConditions})`;
+          f.terms.forEach((term, i) => {
+            f.fields.forEach(field => {
+              params[`term_${field}_${i}`] = term;
+            });
+          });
+        }
+      });
+      query += " ALLOW FILTERING;";
+      return { query, params };
+    }
+    function updateQuerySection() {
+      const { query, params } = generateDynamicQuery();
+      document.getElementById("querySection").innerHTML =
+        `<div><strong>Dynamic Cassandra Query (Python-ready):</strong></div>
+         <pre>${query}</pre>
+         <div style="margin-top:0.5em;"><strong>Python Parameters:</strong>
+         <pre>${JSON.stringify(params, null, 2)}</pre></div>`;
+    }
+    // Initial render
+    renderCountTags(); renderFieldTags(); renderTermTags(); renderActiveFilters(); updateQuerySection();
+
+    // ---- Custom CQL/SQL Query Box and Table Output ----
+    const customQueryInput = document.getElementById('customQuery');
+    const runCustomQueryBtn = document.getElementById('runCustomQueryBtn');
+    const clearCustomQueryBtn = document.getElementById('clearCustomQueryBtn');
+    const sqlTableSection = document.getElementById('sqlTableSection');
+    function simulateCassandraQuery(query) {
+      let columns = [];
+      let rows = [];
+      let match = query.match(/select\s+(.*?)\s+from\s+([^\s;]+)/i);
+      if (!match) return { columns: ["result"], rows: [["Invalid or unsupported query"]] };
+      let colStr = match[1].trim();
+      columns = colStr === '*' ? ["id", "name", "value", "timestamp"] : colStr.split(',').map(c=>c.trim());
+      for (let i = 0; i < 5; ++i) {
+        rows.push(columns.map(col => {
+          if(col.match(/id/i)) return i+1;
+          if(col.match(/name/i)) return "row_"+(i+1);
+          if(col.match(/timestamp/i)) return new Date(Date.now() - i*1000000).toISOString();
+          if(col.match(/value/i)) return Math.floor(Math.random()*1000);
+          if(col.match(/date/i)) return new Date(Date.now()-i*86400000).toISOString().slice(0,10);
+          return "val_"+(i+1);
+        }));
+      }
+      return { columns, rows };
+    }
+    function renderSQLTable({columns, rows}) {
+      let ths = columns.map(col => `<th class="text-capitalize">${col}</th>`).join('');
+      let trs = rows.map((row, rIdx) =>
+        `<tr>${row.map((cell, cIdx) =>
+          `<td contenteditable="true" class="editable-cell" data-row="${rIdx}" data-col="${cIdx}">${cell}</td>`
+        ).join('')}</tr>`
+      ).join('');
+      return `
+        <div class="card mt-3">
+          <div class="card-header bg-secondary-subtle fw-bold"><i class="bi bi-table"></i> Query Result Table</div>
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+              <thead class="table-light"><tr>${ths}</tr></thead>
+              <tbody>${trs}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+    function getMergedQuery() {
+      const dyn = generateDynamicQuery().query;
+      const user = customQueryInput.value.trim();
+      if (!user) return dyn;
+      if (user.toLowerCase().includes("select")) return user;
+      if (user.match(/^(where|and|or|order by|limit|allow filtering)/i))
+        return dyn.replace(/;$/, " ") + user + ";";
+      return user;
+    }
+    function runCustomQuery() {
+      let query = getMergedQuery();
+      let result = simulateCassandraQuery(query);
+      sqlTableSection.innerHTML = renderSQLTable(result);
+    }
+    runCustomQueryBtn.onclick = runCustomQuery;
+    clearCustomQueryBtn.onclick = () => { customQueryInput.value = ""; sqlTableSection.innerHTML = ""; };
+    customQueryInput.addEventListener('keydown', function(e){
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runCustomQuery();
+    });
+    sqlTableSection.addEventListener('input', function(e){
+      if (e.target.classList.contains('editable-cell')) {
+        e.target.classList.add('table-warning');
+        setTimeout(()=>e.target.classList.remove('table-warning'), 800);
+      }
+    });
+  </script>
+</body>
+</html>
