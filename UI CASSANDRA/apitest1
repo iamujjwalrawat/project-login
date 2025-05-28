@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Table Sync and API Demo</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    table, th, td { border: 1px solid #aaa; border-collapse: collapse; padding: 8px; }
+    th { background: #f0f0f0; }
+    button { margin: 10px 5px; }
+    pre { background: #f9f9f9; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Sync Table Inputs and Send to API</h2>
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>Text Input</th>
+        <th>Select Option</th>
+        <th>Text Input</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="text" value="Alice"></td>
+        <td>
+          <select>
+            <option value="Admin">Admin</option>
+            <option value="User" selected>User</option>
+            <option value="Guest">Guest</option>
+          </select>
+        </td>
+        <td><input type="text" value="NY"></td>
+      </tr>
+      <tr>
+        <td><input type="text" value="Bob"></td>
+        <td>
+          <select>
+            <option value="Admin">Admin</option>
+            <option value="User">User</option>
+            <option value="Guest" selected>Guest</option>
+          </select>
+        </td>
+        <td><input type="text" value="CA"></td>
+      </tr>
+      <tr>
+        <td><input type="text" value="Carol"></td>
+        <td>
+          <select>
+            <option value="Admin" selected>Admin</option>
+            <option value="User">User</option>
+            <option value="Guest">Guest</option>
+          </select>
+        </td>
+        <td><input type="text" value="TX"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button id="postBtn">Send as POST</button>
+  <button id="getBtn">Send as GET</button>
+  <pre id="result"></pre>
+
+  <script>
+    // Helper to collect all table data into an array of objects
+    function collectTableData() {
+      var data = [];
+      $('#dataTable tbody tr').each(function() {
+        var row = {
+          col1: $(this).find('td:eq(0) input').val(),
+          col2: $(this).find('td:eq(1) select').val(),
+          col3: $(this).find('td:eq(2) input').val()
+        };
+        data.push(row);
+      });
+      return data;
+    }
+
+    // POST button handler
+    $('#postBtn').on('click', function() {
+      var rows = collectTableData();
+      var jsonData = JSON.stringify({ rows: rows }, null, 2);
+
+      // Show data in the <pre> for demonstration
+      $('#result').text("POST Body:\n" + jsonData);
+
+      // Uncomment below to actually send to your API
+      /*
+      $.ajax({
+        url: 'https://your-api-endpoint.com/api',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ rows: rows }),
+        success: function(response) {
+          $('#result').text("POST Response:\n" + JSON.stringify(response, null, 2));
+        },
+        error: function(xhr) {
+          $('#result').text("POST Error:\n" + xhr.status + " " + xhr.statusText);
+        }
+      });
+      */
+    });
+
+    // GET button handler
+    $('#getBtn').on('click', function() {
+      var rows = collectTableData();
+      var queryString = $.param({ rows: JSON.stringify(rows) });
+
+      // Show URL in the <pre> for demonstration
+      $('#result').text("GET URL:\nhttps://your-api-endpoint.com/api?" + queryString);
+
+      // Uncomment below to actually send to your API
+      /*
+      $.ajax({
+        url: 'https://your-api-endpoint.com/api?' + queryString,
+        type: 'GET',
+        success: function(response) {
+          $('#result').text("GET Response:\n" + JSON.stringify(response, null, 2));
+        },
+        error: function(xhr) {
+          $('#result').text("GET Error:\n" + xhr.status + " " + xhr.statusText);
+        }
+      });
+      */
+    });
+  </script>
+</body>
+</html>
+
+// How it works:
+
+Table: 3 columns, each row has two text inputs and one select.
+
+Buttons: "Send as POST" and "Send as GET" collect all values and show the request (uncomment AJAX code to actually send).
+
+Cross-platform: No OS-specific code, just HTML/JS/jQuery.
+
+Easy to adapt: Change API endpoint URL as needed.
+
+Tip:
+You can copy-paste this file and open it in any browser.
+To test with your real API, just uncomment the AJAX sections and set your API URL.
